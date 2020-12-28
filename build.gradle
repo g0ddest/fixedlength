@@ -1,14 +1,106 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+}
+
 plugins {
+    id "com.jfrog.bintray" version "1.8.5"
+    id "maven-publish"
     id 'java'
 }
 
-group 'name.velikodniy.vitaliy.fixedlength'
+group 'name.velikodniy.vitaliy'
 version '0.1'
 
 repositories {
+    mavenLocal()
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+javadoc.failOnError = false
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+def pomConfig = {
+    licenses {
+        license {
+            name "The Apache Software License, Version 2.0"
+            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            distribution "repo"
+        }
+    }
+    developers {
+        developer {
+            id "velikodniy"
+            name "Vitaliy Velikodniy"
+            email "vitaliy@velikodniy.name"
+        }
+    }
+
+    scm {
+        url "https://github.com/g0ddest/fixedlength"
+    }
+}
+
+publishing {
+    publications {
+        mavenPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar {
+                classifier "sources"
+            }
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+            groupId 'name.velikodniy.vitaliy'
+            artifactId 'fixedlength'
+            version '0.1'
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', 'Fast simple zero-dependency Java library to parse fixed length files')
+                root.appendNode('name', 'fixedlength')
+                root.appendNode('url', 'https://github.com/g0ddest/fixedlength')
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+bintray {
+    user = System.getProperty('bintray.user') != null ? System.getProperty('bintray.user') : System.getenv('bintray.user')
+    key = System.getProperty('bintray.key') != null ? System.getProperty('bintray.key') : System.getenv('bintray.key')
+    publications = ['mavenPublication']
+
+    pkg {
+        repo = 'fixedlength'
+        name = 'fixedlength'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/g0ddest/fixedlength'
+        version {
+            name = '0.1'
+            desc = '0.1'
+            released  = new Date()
+        }
+    }
+
 }

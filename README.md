@@ -1,7 +1,8 @@
  # Fixed Length handler for Java
  
  ![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
- 
+ [![bintray](https://api.bintray.com/packages/velikodniy/fixedlength/fixedlength/images/download.svg) ](https://bintray.com/velikodniy/fixedlength/fixedlength/_latestVersion)
+
 This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length files.
 
 Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso/fixed-length-file-handler) and [fixedformat4j](https://github.com/jeyben/fixedformat4j).
@@ -9,6 +10,43 @@ Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso
 One of its advantages is support mixed line types.
 
 It works with `InputStream` so it is more memory efficient than store all file in memory. This is big advantage when working with big files.  
+
+## Download
+
+This library is published to Bintray jcenter, so you'll need to configure that in your repositories:
+
+```groovy
+repositories {
+    mavenCentral()
+    jcenter()
+}
+```
+
+And then configure dependency:
+
+Maven:
+```xml
+<dependency>
+  <groupId>name.velikodniy.vitaliy</groupId>
+  <artifactId>fixedlength</artifactId>
+  <version>0.1</version>
+  <type>pom</type>
+</dependency>
+```
+
+Gradle:
+```groovy
+implementation 'name.velikodniy.vitaliy:fixedlength:0.1'
+```
+
+Ivy:
+```xml
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.1'>
+  <artifact name='fixedlength' ext='pom' ></artifact>
+</dependency>
+```
+
+## Usage
 
 For example, you can transform this lines to 2 different kind of objects:
 
