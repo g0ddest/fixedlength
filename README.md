@@ -1,5 +1,7 @@
  # Fixed Length handler for Java
  
+ ![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
+ 
 This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length files.
 
 Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso/fixed-length-file-handler) and [fixedformat4j](https://github.com/jeyben/fixedformat4j).
