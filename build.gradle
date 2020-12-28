@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group 'name.velikodniy.vitaliy.fixedlength'
+version '0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
