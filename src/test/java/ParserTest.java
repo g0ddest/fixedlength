@@ -1,6 +1,6 @@
 import name.velikodniy.vitaliy.fixedlength.FixedLength;
 import name.velikodniy.vitaliy.fixedlength.FixedLengthException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
