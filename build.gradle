@@ -2,12 +2,10 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
-        jcenter()
     }
 }
 
 plugins {
-    id "com.jfrog.bintray" version "1.8.5"
     id "maven-publish"
     id 'java'
 }
@@ -63,44 +61,19 @@ def pomConfig = {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/g0ddest/fixedlength")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
     publications {
-        mavenPublication(MavenPublication) {
-            from components.java
-            artifact sourcesJar {
-                classifier "sources"
-            }
-            artifact javadocJar {
-                classifier "javadoc"
-            }
-            groupId 'name.velikodniy.vitaliy'
-            artifactId 'fixedlength'
-            version '0.1'
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', 'Fast simple zero-dependency Java library to parse fixed length files')
-                root.appendNode('name', 'fixedlength')
-                root.appendNode('url', 'https://github.com/g0ddest/fixedlength')
-                root.children().last() + pomConfig
-            }
+        gpr(MavenPublication) {
+            from(components.java)
         }
     }
-}
-
-bintray {
-    user = System.getProperty('bintray.user') != null ? System.getProperty('bintray.user') : System.getenv('bintray.user')
-    key = System.getProperty('bintray.key') != null ? System.getProperty('bintray.key') : System.getenv('bintray.key')
-    publications = ['mavenPublication']
-
-    pkg {
-        repo = 'fixedlength'
-        name = 'fixedlength'
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/g0ddest/fixedlength'
-        version {
-            name = '0.1'
-            desc = '0.1'
-            released  = new Date()
-        }
-    }
-
 }
