@@ -1,7 +1,6 @@
  # Fixed Length handler for Java
  
  ![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
- [![bintray](https://api.bintray.com/packages/velikodniy/fixedlength/fixedlength/images/download.svg) ](https://bintray.com/velikodniy/fixedlength/fixedlength/_latestVersion)
 
 This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length files.
 
@@ -18,7 +17,9 @@ This library is published to Bintray jcenter, so you'll need to configure that i
 ```groovy
 repositories {
     mavenCentral()
-    jcenter()
+    maven {
+        url "https://maven.pkg.github.com/g0ddest/fixedlength"
+    }
 }
 ```
 
@@ -29,19 +30,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.1</version>
+  <version>0.2</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.1'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.2'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.1'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.2'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
