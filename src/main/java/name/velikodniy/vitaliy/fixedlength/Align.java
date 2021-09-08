@@ -10,7 +10,9 @@ public enum Align {
             while (result.startsWith("" + paddingChar)) {
                 result = result.substring(1);
             }
-            if (paddingChar == '0' && result.isEmpty()) result = "0";
+            if (paddingChar == '0' && result.isEmpty()) {
+                result = "0";
+            }
             return result;
         }
     },

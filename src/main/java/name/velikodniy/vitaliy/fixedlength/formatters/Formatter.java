@@ -14,7 +14,11 @@ import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public abstract class Formatter<T> {
-    public static Map<Class<? extends Serializable>, Class<? extends Formatter>> defaultFormatters = new HashMap<>();
+    private static Map<Class<? extends Serializable>, Class<? extends Formatter>> defaultFormatters = new HashMap<>();
+
+    public static Map<Class<? extends Serializable>, Class<? extends Formatter>> getDefaultFormatters() {
+        return defaultFormatters;
+    }
 
     static {
         defaultFormatters.put(String.class, StringFormatter.class);
@@ -31,7 +35,10 @@ public abstract class Formatter<T> {
         defaultFormatters.put(BigDecimal.class, BigDecimalFormatter.class);
     }
 
-    public static Formatter instance(Map<Class<? extends Serializable>, Class<? extends Formatter>> formatters, final Class<?> type) throws FixedLengthException {
+    public static Formatter instance(
+            Map<Class<? extends Serializable>,
+            Class<? extends Formatter>> formatters, final Class<?> type
+    ) throws FixedLengthException {
         Class<? extends Formatter> formatterClass = formatters.get(type);
 
         if (formatterClass != null) {
@@ -40,7 +47,9 @@ public abstract class Formatter<T> {
             } catch (Exception e) {
                 throw new FixedLengthException("Cannot create new instance of formatter " + formatterClass.getName());
             }
-        } else throw new FixedLengthException("Not found formatter for class " + type.getName());
+        } else {
+            throw new FixedLengthException("Not found formatter for class " + type.getName());
+        }
 
     }
 

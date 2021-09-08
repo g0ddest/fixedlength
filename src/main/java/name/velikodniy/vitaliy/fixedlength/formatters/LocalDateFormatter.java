@@ -9,8 +9,9 @@ public class LocalDateFormatter extends Formatter<LocalDate> {
     @Override
     public LocalDate asObject(String string, FixedField field) {
         String format = "yyyyMMdd";
-        if (!field.format().isEmpty())
+        if (!field.format().isEmpty()) {
             format = field.format();
+        }
 
         return LocalDate.parse(string, DateTimeFormatter.ofPattern(format));
     }

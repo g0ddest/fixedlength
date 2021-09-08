@@ -10,8 +10,9 @@ public class DateFormatter extends Formatter<Date> {
     @Override
     public Date asObject(String string, FixedField field) {
         String format = "yyyyMMdd";
-        if (!field.format().isEmpty())
+        if (!field.format().isEmpty()) {
             format = field.format();
+        }
         try {
             return new SimpleDateFormat(format).parse(string);
         } catch (ParseException e) {

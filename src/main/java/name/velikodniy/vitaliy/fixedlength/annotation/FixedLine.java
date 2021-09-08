@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface FixedLine {
     /**
-     * Indicator of line type. It should starts with this string
+     * Indicator of line type. It should start with this string
      *
-     * @return
+     * @return Indicator of line type
      */
     String startsWith();
 }

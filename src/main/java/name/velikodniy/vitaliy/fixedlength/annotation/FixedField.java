@@ -14,37 +14,37 @@ public @interface FixedField {
     int offset();
 
     /**
-     * Length of field
+     * Length of the field
      *
-     * @return
+     * @return length of the field
      */
     int length();
 
     /**
      * Align of fixed format field
      *
-     * @return
+     * @return align of fixed format field
      */
     Align align() default Align.RIGHT;
 
     /**
      * Padding chars that will be trimmed. It depends on align.
      *
-     * @return
+     * @return padding chars that will be trimmed
      */
     char padding() default ' ';
 
     /**
      * Format for formattable fields like LocalDate
      *
-     * @return
+     * @return Format for formattable fields like LocalDate
      */
     String format() default "";
 
     /**
      * If number fields should be divided. For example we have 000101 and we need to get BigDecimal 1.01
      *
-     * @return
+     * @return divide to 10^(divide)
      */
     int divide() default 0;
 }

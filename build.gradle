@@ -6,17 +6,17 @@ buildscript {
 }
 
 plugins {
-    id "maven-publish"
+    id 'maven-publish'
     id 'java'
+    id 'checkstyle'
 }
 
 group 'name.velikodniy.vitaliy'
-version '0.1'
+version '0.2'
 
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
 }
 
 dependencies {

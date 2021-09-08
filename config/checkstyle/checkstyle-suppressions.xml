@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.0//EN"
+        "https://checkstyle.org/dtds/suppressions_1_0.dtd">
+
+<suppressions>
+    <!-- Ignore specific rule when necessary. Example entry:    -->
+    <!--    <suppress checks="RuleName"                         -->
+    <!--          files="TargetFile.java"                       -->
+    <!--          lines="50-9999"/>                             -->
+
+    <!--  These will ideally go away, but refactoring methods is outside the scope of adding the checkstyle  -->
+    <suppress files="EcmServiceApplication.java" checks="HideUtilityClassConstructor"/>
+    <suppress checks=".*" files="src[/\\]test.*"/>
+    <suppress checks=".*" files="[/\\]build[/\\]"/>
+    <suppress checks="MagicNumber" files=".*[\\/]src[\\/](test|it)[\\/]"/>
+    <suppress checks="MethodLength" files=".*[\\/]src[\\/](test|it)[\\/]"/>
+
+</suppressions>
