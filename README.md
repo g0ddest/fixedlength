@@ -14,11 +14,16 @@ It works with `InputStream` so it is more memory efficient than store all file i
 
 This library is published to Bintray jcenter, so you'll need to configure that in your repositories:
 
+Gradle:
 ```groovy
 repositories {
     mavenCentral()
     maven {
         url "https://maven.pkg.github.com/g0ddest/fixedlength"
+        credentials {
+             username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+             password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+        }
     }
 }
 ```
