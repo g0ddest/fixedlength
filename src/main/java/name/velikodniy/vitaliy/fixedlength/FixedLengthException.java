@@ -1,6 +1,6 @@
 package name.velikodniy.vitaliy.fixedlength;
 
-public class FixedLengthException extends Exception {
+public class FixedLengthException extends RuntimeException {
     public FixedLengthException() {
         super();
     }
