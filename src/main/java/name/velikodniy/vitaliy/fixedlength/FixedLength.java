@@ -4,19 +4,22 @@ import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
 import name.velikodniy.vitaliy.fixedlength.formatters.Formatter;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("ALL")
 public class FixedLength {
@@ -28,6 +31,8 @@ public class FixedLength {
             = Formatter.getDefaultFormatters();
     private List<FixedFormatLine> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
+    private Charset charset = Charset.defaultCharset();
+    private Pattern delimiter = Pattern.compile("\n");
 
     private static FixedFormatLine classToLineDesc(final Class clazz) {
         FixedFormatLine fixedFormatLine = new FixedFormatLine();
@@ -75,6 +80,16 @@ public class FixedLength {
     public FixedLength registerLineTypes(final Class[] lineClasses) {
         registerLineTypes(Arrays.asList(lineClasses));
         return this;
+    }
+
+    public FixedLength usingCharset(Charset charset) {
+      this.charset = requireNonNull(charset, "Charset can't be null");
+      return this;
+    }
+
+    public FixedLength usingLineDelimiter(Pattern pattern) {
+      this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be  null");
+      return this;
     }
 
     private FixedFormatRecord fixedFormatLine(String line) {
@@ -147,19 +162,20 @@ public class FixedLength {
     }
 
     public List<Object> parse(InputStream stream) throws FixedLengthException {
-        return this.parseAsStream(
-                  new BufferedReader(new InputStreamReader(stream))
-                ).collect(Collectors.toList());
+        return this.parseAsStream(stream).collect(Collectors.toList());
     }
 
-    public Stream<Object> parseAsStream(BufferedReader reader)
+    public Stream<Object> parseAsStream(InputStream inputStream)
             throws FixedLengthException {
         if (lineTypes.isEmpty()) {
             throw new FixedLengthException(
                   "Specify at least one line type"
             );
         }
-        return reader.lines()
+        return
+            new Scanner(inputStream, this.charset)
+                .useDelimiter(this.delimiter)
+                .tokens()
                 .map(this::fixedFormatLine)
                 .filter(Objects::nonNull)
                 .map(this::lineToObject);
