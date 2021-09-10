@@ -15,9 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 
@@ -172,13 +175,18 @@ public class FixedLength {
                   "Specify at least one line type"
             );
         }
-        return
-            new Scanner(inputStream, this.charset)
-                .useDelimiter(this.delimiter)
-                .tokens()
-                .map(this::fixedFormatLine)
-                .filter(Objects::nonNull)
-                .map(this::lineToObject);
+
+        Scanner scanner = new Scanner(inputStream, this.charset.name())
+                .useDelimiter(this.delimiter);
+            return StreamSupport.stream(
+                Spliterators.spliterator(
+                        scanner,
+                        Long.MAX_VALUE,
+                        Spliterator.ORDERED | Spliterator.NONNULL
+                ), false)
+                    .map(this::fixedFormatLine)
+                    .filter(Objects::nonNull)
+                    .map(this::lineToObject);
     }
 
     private final class FixedFormatRecord {
