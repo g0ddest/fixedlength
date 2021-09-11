@@ -12,7 +12,7 @@ It works with `InputStream` so it is more memory efficient than store all file i
 
 ## Download
 
-This library is published to Bintray jcenter, so you'll need to configure that in your repositories:
+This library is published to github packages, so you'll need to configure that in your repositories:
 
 Gradle:
 ```groovy
@@ -36,19 +36,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.3</version>
+  <version>0.4</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.3'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.4'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.3'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.4'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
@@ -166,3 +166,32 @@ There are all fields in `FixedField` annotation:
 * `padding` — based on align trimming filler symbols. For example `" 1"` becomes `"1"`.
 * `format` — parameters that goes to formatter. For example, it can be date format.
 * `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
+
+### Cases to use
+
+In the case if you have 2 different records in one line and there is a split index you can add a method in your entity that should return index of the next record and mark it with annotation `SplitLineAfter`.
+
+For example record
+
+```
+HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009
+```
+
+Number 26 indicates index of the next record.
+
+You can describe it with entity:
+
+```java
+@FixedLine(startsWith = "HEADER")
+public class HeaderSplit {
+    @FixedField(offset = 7, length = 10)
+    public String title;
+    @FixedField(offset = 17, length = 2)
+    public int headerLength;
+
+    @SplitLineAfter
+    public int getSplitIndex() {
+        return headerLength;
+    }
+}
+```
