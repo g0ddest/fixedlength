@@ -12,30 +12,30 @@ import java.util.regex.Pattern;
 class ParserTest {
 
     String singleTypeExemple =
-        "Joe1      Smith     Developer 07500010012009\n" +
-            "Joe3      Smith     Developer ";
+            "Joe1      Smith     Developer 07500010012009\n" +
+                    "Joe3      Smith     Developer ";
 
     String mixedTypesExemple =
-        "EmplJoe1      Smith     Developer 07500010012009\n" +
-            "CatSnowball  20200103\n" +
-            "EmplJoe3      Smith     Developer ";
+            "EmplJoe1      Smith     Developer 07500010012009\n" +
+                    "CatSnowball  20200103\n" +
+                    "EmplJoe3      Smith     Developer ";
 
     String mixedTypesSplitRecordExemple =
-        "HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009\n" +
-            "CatSnowball  20200103\n" +
-            "EmplJoe3      Smith     Developer ";
+            "HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009\n" +
+                    "CatSnowball  20200103\n" +
+                    "EmplJoe3      Smith     Developer ";
 
     String mixedTypesCustomDelimiter =
-        "EmplJoe1      Smith     Developer 07500010012009@" +
-            "CatSnowball  20200103@" +
-            "EmplJoe3      Smith     Developer ";
+            "EmplJoe1      Smith     Developer 07500010012009@" +
+                    "CatSnowball  20200103@" +
+                    "EmplJoe3      Smith     Developer ";
 
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineType() throws FixedLengthException {
         List<Object> parse = new FixedLength()
-            .registerLineType(Employee.class)
-            .parse(new ByteArrayInputStream(singleTypeExemple.getBytes()));
+                .registerLineType(Employee.class)
+                .parse(new ByteArrayInputStream(singleTypeExemple.getBytes()));
 
         assert parse.size() == 2;
     }
@@ -44,10 +44,10 @@ class ParserTest {
     @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineTypeUS_ACII() throws FixedLengthException {
         List<Object> parse = new FixedLength()
-            .registerLineType(Employee.class)
-            .usingCharset(StandardCharsets.US_ASCII)
-            .parse(
-                new ByteArrayInputStream(singleTypeExemple.getBytes(StandardCharsets.US_ASCII)));
+                .registerLineType(Employee.class)
+                .usingCharset(StandardCharsets.US_ASCII)
+                .parse(
+                        new ByteArrayInputStream(singleTypeExemple.getBytes(StandardCharsets.US_ASCII)));
 
         assert parse.size() == 2;
     }
@@ -56,9 +56,9 @@ class ParserTest {
     @DisplayName("Parse as input stream with default charset and mixed line type")
     void testParseMixedLineType() throws FixedLengthException {
         List<Object> parse = new FixedLength()
-            .registerLineType(EmployeeMixed.class)
-            .registerLineType(CatMixed.class)
-            .parse(new ByteArrayInputStream(mixedTypesExemple.getBytes()));
+                .registerLineType(EmployeeMixed.class)
+                .registerLineType(CatMixed.class)
+                .parse(new ByteArrayInputStream(mixedTypesExemple.getBytes()));
 
         assert parse.size() == 3;
         assert parse.get(0) instanceof EmployeeMixed;
@@ -75,10 +75,10 @@ class ParserTest {
     @DisplayName("Parse as input stream with default charset and mixed line type with split record")
     void testParseMixedLineTypeSplit() throws FixedLengthException {
         List<Object> parse = new FixedLength()
-            .registerLineType(HeaderSplit.class)
-            .registerLineType(EmployeeMixed.class)
-            .registerLineType(CatMixed.class)
-            .parse(new ByteArrayInputStream(mixedTypesSplitRecordExemple.getBytes()));
+                .registerLineType(HeaderSplit.class)
+                .registerLineType(EmployeeMixed.class)
+                .registerLineType(CatMixed.class)
+                .parse(new ByteArrayInputStream(mixedTypesSplitRecordExemple.getBytes()));
 
         assert parse.size() == 4;
         assert parse.get(0) instanceof HeaderSplit;
@@ -91,10 +91,10 @@ class ParserTest {
     @DisplayName("Parse as input stream with default charset and mixed line type and custom delimiter")
     void testParseMixedLineTypeCustomDelimiter() throws FixedLengthException {
         List<Object> parse = new FixedLength()
-            .registerLineType(EmployeeMixed.class)
-            .registerLineType(CatMixed.class)
-            .usingLineDelimiter(Pattern.compile("@"))
-            .parse(new ByteArrayInputStream(mixedTypesCustomDelimiter.getBytes()));
+                .registerLineType(EmployeeMixed.class)
+                .registerLineType(CatMixed.class)
+                .usingLineDelimiter(Pattern.compile("@"))
+                .parse(new ByteArrayInputStream(mixedTypesCustomDelimiter.getBytes()));
 
         assert parse.size() == 3;
 

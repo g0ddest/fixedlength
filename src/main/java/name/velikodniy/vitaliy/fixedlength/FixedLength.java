@@ -9,17 +9,9 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.Charset;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.nio.charset.Charset;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,9 +23,9 @@ import static java.util.Objects.requireNonNull;
 public class FixedLength {
 
     private static Map<
-                    Class<? extends Serializable>,
-                    Class<? extends Formatter>
-                    > formatters
+            Class<? extends Serializable>,
+            Class<? extends Formatter>
+            > formatters
             = Formatter.getDefaultFormatters();
     private List<FixedFormatLine> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
@@ -49,19 +41,19 @@ public class FixedLength {
             fixedFormatLine.startsWith = annotation.startsWith();
         }
         for (Field field : clazz.getFields()) {
-          FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
-          if (fieldAnnotation == null) {
-            continue;
-          }
-          fixedFormatLine.fixedFormatFields.add(new FixedFormatField(field, fieldAnnotation));
+            FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
+            if (fieldAnnotation == null) {
+                continue;
+            }
+            fixedFormatLine.fixedFormatFields.add(new FixedFormatField(field, fieldAnnotation));
         }
 
-        for(Method method : clazz.getMethods()) {
-          SplitLineAfter splitLineAfter = method.getDeclaredAnnotation(SplitLineAfter.class);
-          if(splitLineAfter == null) {
-            continue;
-          }
-          fixedFormatLine.splitAfterMethod = method;
+        for (Method method : clazz.getMethods()) {
+            SplitLineAfter splitLineAfter = method.getDeclaredAnnotation(SplitLineAfter.class);
+            if (splitLineAfter == null) {
+                continue;
+            }
+            fixedFormatLine.splitAfterMethod = method;
         }
         return fixedFormatLine;
     }
@@ -71,12 +63,13 @@ public class FixedLength {
         return this;
     }
 
-  /**
-   * Add formatter to work with class types.
-   * @param typeClass type that should be formatter
-   * @param formatterClass formatter to pass through
-   * @return instance of FixedLength
-   */
+    /**
+     * Add formatter to work with class types.
+     *
+     * @param typeClass      type that should be formatter
+     * @param formatterClass formatter to pass through
+     * @return instance of FixedLength
+     */
     public FixedLength registerFormatter(
             final Class<? extends Serializable> typeClass,
             final Class<? extends Formatter> formatterClass) {
@@ -104,30 +97,30 @@ public class FixedLength {
     }
 
     public FixedLength usingCharset(Charset charset) {
-      this.charset = requireNonNull(charset, "Charset can't be null");
-      return this;
+        this.charset = requireNonNull(charset, "Charset can't be null");
+        return this;
     }
 
     public FixedLength usingLineDelimiter(Pattern pattern) {
-      this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be  null");
-      return this;
+        this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be  null");
+        return this;
     }
 
     private FixedFormatRecord fixedFormatLine(String line) {
         if (lineTypes.size() == 1) {
             if (lineTypes.get(0).startsWith == null) {
-              return new FixedFormatRecord(line, lineTypes.get(0));
+                return new FixedFormatRecord(line, lineTypes.get(0));
             } else if (line.startsWith(lineTypes.get(0).startsWith)) {
-              return new FixedFormatRecord(line, lineTypes.get(0));
+                return new FixedFormatRecord(line, lineTypes.get(0));
             } else {
-              return null;
+                return null;
             }
         }
         for (FixedFormatLine lineType : lineTypes) {
             if (
                     lineType.startsWith != null
-                    &&
-                    line.startsWith(lineType.startsWith)
+                            &&
+                            line.startsWith(lineType.startsWith)
             ) {
                 return new FixedFormatRecord(line, lineType);
             }
@@ -139,66 +132,66 @@ public class FixedLength {
     }
 
     private Object lineToObject(FixedFormatRecord record) {
-      Class clazz = record.fixedFormatLine.clazz;
-      String line = record.rawLine;
-      Object lineAsObject;
-      try {
-        lineAsObject = clazz.getDeclaredConstructor().newInstance();
-      } catch (NoSuchMethodException e) {
-        throw new FixedLengthException("No empty constructor in class", e);
-      } catch (IllegalAccessException
-          | InstantiationException
-          | InvocationTargetException e) {
-        throw new FixedLengthException(
-            "Unable to instanciate " + clazz.getName(), e
-        );
-      }
-
-
-      for (FixedFormatField fixedFormatField : record.fixedFormatLine.fixedFormatFields) {
-        FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
-        Field field = fixedFormatField.getField();
-        int startOfFieldIndex = fieldAnnotation.offset() - 1;
-        int endOfFieldIndex = startOfFieldIndex + fieldAnnotation.length();
-        if (endOfFieldIndex > line.length()) {
-          continue;
+        Class clazz = record.fixedFormatLine.clazz;
+        String line = record.rawLine;
+        Object lineAsObject;
+        try {
+            lineAsObject = clazz.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException e) {
+            throw new FixedLengthException("No empty constructor in class", e);
+        } catch (IllegalAccessException
+                | InstantiationException
+                | InvocationTargetException e) {
+            throw new FixedLengthException(
+                    "Unable to instanciate " + clazz.getName(), e
+            );
         }
-        String str = fieldAnnotation.align().remove(line.substring(
-            startOfFieldIndex,
-            endOfFieldIndex
-        ), fieldAnnotation.padding());
 
-        if (str != null && !str.trim().isEmpty()) {
-          Formatter formatter = Formatter.instance(formatters, field.getType());
-          try {
-            field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
-          } catch (IllegalAccessException e) {
-            throw new FixedLengthException("Access to field failed", e);
-          }
+
+        for (FixedFormatField fixedFormatField : record.fixedFormatLine.fixedFormatFields) {
+            FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
+            Field field = fixedFormatField.getField();
+            int startOfFieldIndex = fieldAnnotation.offset() - 1;
+            int endOfFieldIndex = startOfFieldIndex + fieldAnnotation.length();
+            if (endOfFieldIndex > line.length()) {
+                continue;
+            }
+            String str = fieldAnnotation.align().remove(line.substring(
+                    startOfFieldIndex,
+                    endOfFieldIndex
+            ), fieldAnnotation.padding());
+
+            if (str != null && !str.trim().isEmpty()) {
+                Formatter formatter = Formatter.instance(formatters, field.getType());
+                try {
+                    field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
+                } catch (IllegalAccessException e) {
+                    throw new FixedLengthException("Access to field failed", e);
+                }
+            }
         }
-      }
-      return lineAsObject;
+        return lineAsObject;
     }
 
     private List<Object> lineToObjects(FixedFormatRecord record) {
         Object lineAsObject = this.lineToObject(record);
         Method splitMethod = record.fixedFormatLine.splitAfterMethod;
-        if(splitMethod == null) {
-          return Collections.singletonList(lineAsObject);
+        if (splitMethod == null) {
+            return Collections.singletonList(lineAsObject);
         }
         int splitIndex;
         try {
-          splitIndex = (Integer) splitMethod.invoke(lineAsObject);
+            splitIndex = (Integer) splitMethod.invoke(lineAsObject);
         } catch (IllegalAccessException | InvocationTargetException e) {
-          throw new FixedLengthException("Access to method failed", e);
+            throw new FixedLengthException("Access to method failed", e);
         }
-        if(splitIndex >= record.rawLine.length()) {
-          return Collections.singletonList(lineAsObject);
+        if (splitIndex >= record.rawLine.length()) {
+            return Collections.singletonList(lineAsObject);
         }
         String subRawLine = record.rawLine.substring(splitIndex);
         FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
         if (subRecord == null) {
-          return Collections.singletonList(lineAsObject);
+            return Collections.singletonList(lineAsObject);
         }
         List<Object> lineAsObjects = new ArrayList<>();
         lineAsObjects.add(lineAsObject);
@@ -214,20 +207,20 @@ public class FixedLength {
             throws FixedLengthException {
         if (lineTypes.isEmpty()) {
             throw new FixedLengthException(
-                  "Specify at least one line type"
+                    "Specify at least one line type"
             );
         }
 
         Scanner scanner = new Scanner(inputStream, this.charset.name())
                 .useDelimiter(this.delimiter);
-            return StreamSupport.stream(
-                Spliterators.spliterator(
-                        scanner,
-                        Long.MAX_VALUE,
-                        Spliterator.ORDERED | Spliterator.NONNULL
-                ), false)
-                    .map(this::fixedFormatLine)
-                    .filter(Objects::nonNull)
+        return StreamSupport.stream(
+                        Spliterators.spliterator(
+                                scanner,
+                                Long.MAX_VALUE,
+                                Spliterator.ORDERED | Spliterator.NONNULL
+                        ), false)
+                .map(this::fixedFormatLine)
+                .filter(Objects::nonNull)
                 .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
     }
 
@@ -244,44 +237,44 @@ public class FixedLength {
     }
 
     private static class FixedFormatLine {
-      private String startsWith = null;
-      private Class clazz;
-      private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
-      private Method splitAfterMethod;
+        private String startsWith = null;
+        private Class clazz;
+        private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
+        private Method splitAfterMethod;
 
-      public String getStartsWith() {
-        return startsWith;
-      }
+        public String getStartsWith() {
+            return startsWith;
+        }
 
-      public void setStartsWith(String startsWith) {
-        this.startsWith = startsWith;
-      }
+        public void setStartsWith(String startsWith) {
+            this.startsWith = startsWith;
+        }
 
-      public Class getClazz() {
-        return clazz;
-      }
+        public Class getClazz() {
+            return clazz;
+        }
 
-      public void setClazz(Class clazz) {
-        this.clazz = clazz;
-      }
+        public void setClazz(Class clazz) {
+            this.clazz = clazz;
+        }
     }
 
     private static class FixedFormatField {
-      private final Field field;
-      private final FixedField fixedFieldAnnotation;
+        private final Field field;
+        private final FixedField fixedFieldAnnotation;
 
-      private FixedFormatField(Field field, FixedField fixedField) {
-        this.field = field;
-        this.fixedFieldAnnotation = fixedField;
-      }
+        private FixedFormatField(Field field, FixedField fixedField) {
+            this.field = field;
+            this.fixedFieldAnnotation = fixedField;
+        }
 
-      public Field getField() {
-        return field;
-      }
+        public Field getField() {
+            return field;
+        }
 
-      public FixedField getFixedFieldAnnotation() {
-        return fixedFieldAnnotation;
-      }
+        public FixedField getFixedFieldAnnotation() {
+            return fixedFieldAnnotation;
+        }
     }
 
 }

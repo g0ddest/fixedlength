@@ -37,7 +37,7 @@ public abstract class Formatter<T> {
 
     public static Formatter instance(
             Map<Class<? extends Serializable>,
-            Class<? extends Formatter>> formatters, final Class<?> type
+                    Class<? extends Formatter>> formatters, final Class<?> type
     ) throws FixedLengthException {
         Class<? extends Formatter> formatterClass = formatters.get(type);
 
