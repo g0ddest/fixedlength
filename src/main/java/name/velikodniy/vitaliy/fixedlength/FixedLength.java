@@ -2,6 +2,7 @@ package name.velikodniy.vitaliy.fixedlength;
 
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
+import name.velikodniy.vitaliy.fixedlength.annotation.SplitLineAfter;
 import name.velikodniy.vitaliy.fixedlength.formatters.Formatter;
 
 import java.io.InputStream;
@@ -9,8 +10,10 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +47,21 @@ public class FixedLength {
                 (FixedLine) clazz.getDeclaredAnnotation(FixedLine.class);
         if (annotation != null) {
             fixedFormatLine.startsWith = annotation.startsWith();
+        }
+        for (Field field : clazz.getFields()) {
+          FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
+          if (fieldAnnotation == null) {
+            continue;
+          }
+          fixedFormatLine.fixedFormatFields.add(new FixedFormatField(field, fieldAnnotation));
+        }
+
+        for(Method method : clazz.getMethods()) {
+          SplitLineAfter splitLineAfter = method.getDeclaredAnnotation(SplitLineAfter.class);
+          if(splitLineAfter == null) {
+            continue;
+          }
+          fixedFormatLine.splitAfterMethod = method;
         }
         return fixedFormatLine;
     }
@@ -121,47 +139,71 @@ public class FixedLength {
     }
 
     private Object lineToObject(FixedFormatRecord record) {
-        Class clazz = record.fixedFormatLine.clazz;
-        String line = record.rawLine;
-        Object lineAsObject;
+      Class clazz = record.fixedFormatLine.clazz;
+      String line = record.rawLine;
+      Object lineAsObject;
+      try {
+        lineAsObject = clazz.getDeclaredConstructor().newInstance();
+      } catch (NoSuchMethodException e) {
+        throw new FixedLengthException("No empty constructor in class", e);
+      } catch (IllegalAccessException
+          | InstantiationException
+          | InvocationTargetException e) {
+        throw new FixedLengthException(
+            "Unable to instanciate " + clazz.getName(), e
+        );
+      }
+
+
+      for (FixedFormatField fixedFormatField : record.fixedFormatLine.fixedFormatFields) {
+        FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
+        Field field = fixedFormatField.getField();
+        int startOfFieldIndex = fieldAnnotation.offset() - 1;
+        int endOfFieldIndex = startOfFieldIndex + fieldAnnotation.length();
+        if (endOfFieldIndex > line.length()) {
+          continue;
+        }
+        String str = fieldAnnotation.align().remove(line.substring(
+            startOfFieldIndex,
+            endOfFieldIndex
+        ), fieldAnnotation.padding());
+
+        if (str != null && !str.trim().isEmpty()) {
+          Formatter formatter = Formatter.instance(formatters, field.getType());
+          try {
+            field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
+          } catch (IllegalAccessException e) {
+            throw new FixedLengthException("Access to field failed", e);
+          }
+        }
+      }
+      return lineAsObject;
+    }
+
+    private List<Object> lineToObjects(FixedFormatRecord record) {
+        Object lineAsObject = this.lineToObject(record);
+        Method splitMethod = record.fixedFormatLine.splitAfterMethod;
+        if(splitMethod == null) {
+          return Collections.singletonList(lineAsObject);
+        }
+        int splitIndex;
         try {
-            lineAsObject = clazz.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException e) {
-            throw new FixedLengthException("No empty constructor in class", e);
-        } catch (IllegalAccessException
-                | InstantiationException
-                | InvocationTargetException e) {
-            throw new FixedLengthException(
-                "Unable to instanciate " + clazz.getName(), e
-            );
+          splitIndex = (Integer) splitMethod.invoke(lineAsObject);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          throw new FixedLengthException("Access to method failed", e);
         }
-
-
-        for (Field field : clazz.getFields()) {
-            FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
-            if (fieldAnnotation == null) {
-                continue;
-            }
-            int startOfFieldIndex = fieldAnnotation.offset() - 1;
-            int endOfFieldIndex = startOfFieldIndex + fieldAnnotation.length();
-            if (endOfFieldIndex > line.length()) {
-                continue;
-            }
-            String str = fieldAnnotation.align().remove(line.substring(
-                    startOfFieldIndex,
-                    endOfFieldIndex
-            ), fieldAnnotation.padding());
-
-            if (str != null && !str.trim().isEmpty()) {
-                Formatter formatter = Formatter.instance(formatters, field.getType());
-                try {
-                    field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
-                } catch (IllegalAccessException e) {
-                    throw new FixedLengthException("Access to field failed", e);
-                }
-            }
+        if(splitIndex >= record.rawLine.length()) {
+          return Collections.singletonList(lineAsObject);
         }
-        return lineAsObject;
+        String subRawLine = record.rawLine.substring(splitIndex);
+        FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
+        if (subRecord == null) {
+          return Collections.singletonList(lineAsObject);
+        }
+        List<Object> lineAsObjects = new ArrayList<>();
+        lineAsObjects.add(lineAsObject);
+        lineAsObjects.addAll(lineToObjects(subRecord));
+        return lineAsObjects;
     }
 
     public List<Object> parse(InputStream stream) throws FixedLengthException {
@@ -186,7 +228,7 @@ public class FixedLength {
                 ), false)
                     .map(this::fixedFormatLine)
                     .filter(Objects::nonNull)
-                    .map(this::lineToObject);
+                .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
     }
 
     private final class FixedFormatRecord {
@@ -202,8 +244,10 @@ public class FixedLength {
     }
 
     private static class FixedFormatLine {
-        private String startsWith = null;
-        private Class clazz;
+      private String startsWith = null;
+      private Class clazz;
+      private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
+      private Method splitAfterMethod;
 
       public String getStartsWith() {
         return startsWith;
@@ -219,6 +263,24 @@ public class FixedLength {
 
       public void setClazz(Class clazz) {
         this.clazz = clazz;
+      }
+    }
+
+    private static class FixedFormatField {
+      private final Field field;
+      private final FixedField fixedFieldAnnotation;
+
+      private FixedFormatField(Field field, FixedField fixedField) {
+        this.field = field;
+        this.fixedFieldAnnotation = fixedField;
+      }
+
+      public Field getField() {
+        return field;
+      }
+
+      public FixedField getFixedFieldAnnotation() {
+        return fixedFieldAnnotation;
       }
     }
 
