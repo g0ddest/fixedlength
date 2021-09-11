@@ -11,16 +11,16 @@ import java.util.regex.Pattern;
 
 class ParserTest {
 
-    String singleTypeExemple =
+    String singleTypeExample =
             "Joe1      Smith     Developer 07500010012009\n" +
                     "Joe3      Smith     Developer ";
 
-    String mixedTypesExemple =
+    String mixedTypesExample =
             "EmplJoe1      Smith     Developer 07500010012009\n" +
                     "CatSnowball  20200103\n" +
                     "EmplJoe3      Smith     Developer ";
 
-    String mixedTypesSplitRecordExemple =
+    String mixedTypesSplitRecordExample =
             "HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009\n" +
                     "CatSnowball  20200103\n" +
                     "EmplJoe3      Smith     Developer ";
@@ -35,7 +35,7 @@ class ParserTest {
     void testParseOneLineType() throws FixedLengthException {
         List<Object> parse = new FixedLength()
                 .registerLineType(Employee.class)
-                .parse(new ByteArrayInputStream(singleTypeExemple.getBytes()));
+                .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
         assert parse.size() == 2;
     }
@@ -47,7 +47,7 @@ class ParserTest {
                 .registerLineType(Employee.class)
                 .usingCharset(StandardCharsets.US_ASCII)
                 .parse(
-                        new ByteArrayInputStream(singleTypeExemple.getBytes(StandardCharsets.US_ASCII)));
+                        new ByteArrayInputStream(singleTypeExample.getBytes(StandardCharsets.US_ASCII)));
 
         assert parse.size() == 2;
     }
@@ -58,7 +58,7 @@ class ParserTest {
         List<Object> parse = new FixedLength()
                 .registerLineType(EmployeeMixed.class)
                 .registerLineType(CatMixed.class)
-                .parse(new ByteArrayInputStream(mixedTypesExemple.getBytes()));
+                .parse(new ByteArrayInputStream(mixedTypesExample.getBytes()));
 
         assert parse.size() == 3;
         assert parse.get(0) instanceof EmployeeMixed;
@@ -78,7 +78,7 @@ class ParserTest {
                 .registerLineType(HeaderSplit.class)
                 .registerLineType(EmployeeMixed.class)
                 .registerLineType(CatMixed.class)
-                .parse(new ByteArrayInputStream(mixedTypesSplitRecordExemple.getBytes()));
+                .parse(new ByteArrayInputStream(mixedTypesSplitRecordExample.getBytes()));
 
         assert parse.size() == 4;
         assert parse.get(0) instanceof HeaderSplit;
