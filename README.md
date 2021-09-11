@@ -195,3 +195,7 @@ public class HeaderSplit {
     }
 }
 ```
+
+## Benchmark
+
+There is a benchmark, you can run it with `gradle jmh` command. Also, you can change running parameters of it in file `src/jmh/java/name/velikodniy/vitaliy/fixedlength/benchmark/BenchmarkRunner.java`. 

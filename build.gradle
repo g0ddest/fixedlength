@@ -9,6 +9,7 @@ plugins {
     id 'maven-publish'
     id 'java'
     id 'checkstyle'
+    id "me.champeau.jmh" version "0.6.6"
 }
 
 group 'name.velikodniy.vitaliy'
@@ -42,6 +43,11 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
     archives sourcesJar
     archives javadocJar
+}
+
+checkstyle {
+    sourceSets = [ project.sourceSets.main ]
+    checkstyleMain.exclude '**/jmh/**'
 }
 
 publishing {
