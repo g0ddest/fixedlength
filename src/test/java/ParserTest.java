@@ -18,6 +18,7 @@ class ParserTest {
     String mixedTypesExample =
             "EmplJoe1      Smith     Developer 07500010012009\n" +
                     "CatSnowball  20200103\n" +
+                    "CatNoBirthDt 00000000\n" +
                     "EmplJoe3      Smith     Developer ";
 
     String mixedTypesSplitRecordExample =
@@ -60,15 +61,18 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesExample.getBytes()));
 
-        assert parse.size() == 3;
+        assert parse.size() == 4;
         assert parse.get(0) instanceof EmployeeMixed;
         assert parse.get(1) instanceof CatMixed;
-        assert parse.get(2) instanceof EmployeeMixed;
+        assert parse.get(2) instanceof CatMixed;
+        assert parse.get(3) instanceof EmployeeMixed;
         EmployeeMixed employeeMixed = (EmployeeMixed) parse.get(0);
         assert "Joe1".equals(employeeMixed.firstName);
         assert "Smith".equals(employeeMixed.lastName);
         CatMixed catMixed = (CatMixed) parse.get(1);
         assert LocalDate.of(2020, 1, 3).equals(catMixed.birthDate);
+        catMixed = (CatMixed) parse.get(2);
+        assert catMixed.birthDate == null;
     }
 
     @Test

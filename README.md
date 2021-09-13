@@ -166,6 +166,7 @@ There are all fields in `FixedField` annotation:
 * `padding` — based on align trimming filler symbols. For example `" 1"` becomes `"1"`.
 * `format` — parameters that goes to formatter. For example, it can be date format.
 * `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
+* `ignore` — the parser will ignore the field content if it matches the given regular expression. For example, `"0{8}"` will ignore `"00000000"`
 
 ### Cases to use
 

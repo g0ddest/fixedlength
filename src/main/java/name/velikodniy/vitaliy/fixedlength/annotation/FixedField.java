@@ -47,4 +47,10 @@ public @interface FixedField {
      * @return divide to 10^(divide)
      */
     int divide() default 0;
+
+    /**
+     * Ignore field content if is matches this regular expresion pattern.
+     * @return pattern matching content to ignore
+     */
+    String ignore() default "";
 }
