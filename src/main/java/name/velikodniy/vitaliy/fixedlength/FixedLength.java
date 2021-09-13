@@ -168,17 +168,33 @@ public class FixedLength {
                     startOfFieldIndex,
                     endOfFieldIndex
             ), fieldAnnotation.padding());
-
-            if (str != null && !str.trim().isEmpty()) {
-                Formatter formatter = Formatter.instance(formatters, field.getType());
-                try {
-                    field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
-                } catch (IllegalAccessException e) {
-                    throw new FixedLengthException("Access to field failed", e);
-                }
+            if(!acceptFieldContent(str, fieldAnnotation)) {
+                continue;
+            }
+            Formatter formatter = Formatter.instance(formatters, field.getType());
+            try {
+                field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
+            } catch (IllegalAccessException e) {
+                throw new FixedLengthException("Access to field failed", e);
             }
         }
         return lineAsObject;
+    }
+
+    private boolean acceptFieldContent(String content, FixedField fieldAnnotation) {
+        if(content == null) {
+            return false;
+        }
+        if(content.trim().isEmpty()) {
+            return false;
+        }
+        if(fieldAnnotation.ignore().isEmpty()) {
+            // No ignore cotent defined, accepting
+            return true;
+        }
+        // Ignore cotent defined: accepting if not matching ignore regular expression
+        Pattern pattern = Pattern.compile(fieldAnnotation.ignore());
+        return !pattern.matcher(content).matches();
     }
 
     private List<Object> lineToObjects(FixedFormatRecord record) {
