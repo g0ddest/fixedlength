@@ -168,7 +168,7 @@ public class FixedLength {
                     startOfFieldIndex,
                     endOfFieldIndex
             ), fieldAnnotation.padding());
-            if(!acceptFieldContent(str, fieldAnnotation)) {
+            if (!acceptFieldContent(str, fieldAnnotation)) {
                 continue;
             }
             Formatter formatter = Formatter.instance(formatters, field.getType());
@@ -182,13 +182,13 @@ public class FixedLength {
     }
 
     private boolean acceptFieldContent(String content, FixedField fieldAnnotation) {
-        if(content == null) {
+        if (content == null) {
             return false;
         }
-        if(content.trim().isEmpty()) {
+        if (content.trim().isEmpty()) {
             return false;
         }
-        if(fieldAnnotation.ignore().isEmpty()) {
+        if (fieldAnnotation.ignore().isEmpty()) {
             // No ignore cotent defined, accepting
             return true;
         }
