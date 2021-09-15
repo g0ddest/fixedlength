@@ -34,7 +34,7 @@ class ParserTest {
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineType() throws FixedLengthException {
-        List<Object> parse = new FixedLength()
+        List<Row> parse = new FixedLength<Row>()
                 .registerLineType(Employee.class)
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
@@ -44,7 +44,7 @@ class ParserTest {
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineTypeUS_ACII() throws FixedLengthException {
-        List<Object> parse = new FixedLength()
+        List<Object> parse = new FixedLength<>()
                 .registerLineType(Employee.class)
                 .usingCharset(StandardCharsets.US_ASCII)
                 .parse(
@@ -56,7 +56,7 @@ class ParserTest {
     @Test
     @DisplayName("Parse as input stream with default charset and mixed line type")
     void testParseMixedLineType() throws FixedLengthException {
-        List<Object> parse = new FixedLength()
+        List<Object> parse = new FixedLength<>()
                 .registerLineType(EmployeeMixed.class)
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesExample.getBytes()));
@@ -78,7 +78,7 @@ class ParserTest {
     @Test
     @DisplayName("Parse as input stream with default charset and mixed line type with split record")
     void testParseMixedLineTypeSplit() throws FixedLengthException {
-        List<Object> parse = new FixedLength()
+        List<Object> parse = new FixedLength<>()
                 .registerLineType(HeaderSplit.class)
                 .registerLineType(EmployeeMixed.class)
                 .registerLineType(CatMixed.class)
@@ -94,7 +94,7 @@ class ParserTest {
     @Test
     @DisplayName("Parse as input stream with default charset and mixed line type and custom delimiter")
     void testParseMixedLineTypeCustomDelimiter() throws FixedLengthException {
-        List<Object> parse = new FixedLength()
+        List<Object> parse = new FixedLength<>()
                 .registerLineType(EmployeeMixed.class)
                 .registerLineType(CatMixed.class)
                 .usingLineDelimiter(Pattern.compile("@"))
