@@ -4,7 +4,7 @@ import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class Employee {
+public class Employee implements Row {
 
     @FixedField(offset = 1, length = 10, align = Align.LEFT)
     public String firstName;

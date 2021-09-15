@@ -28,23 +28,22 @@ import java.util.stream.StreamSupport;
 import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("ALL")
-public class FixedLength {
+public class FixedLength<T> {
 
     private static Map<
             Class<? extends Serializable>,
             Class<? extends Formatter>
             > formatters
             = Formatter.getDefaultFormatters();
-    private List<FixedFormatLine> lineTypes = new ArrayList<>();
+    private List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
     private Charset charset = Charset.defaultCharset();
     private Pattern delimiter = Pattern.compile("\n");
 
-    private static FixedFormatLine classToLineDesc(final Class clazz) {
-        FixedFormatLine fixedFormatLine = new FixedFormatLine();
+    private FixedFormatLine<T> classToLineDesc(final Class<? extends T> clazz) {
+        FixedFormatLine<T> fixedFormatLine = new FixedFormatLine<>();
         fixedFormatLine.clazz = clazz;
-        FixedLine annotation =
-                (FixedLine) clazz.getDeclaredAnnotation(FixedLine.class);
+        FixedLine annotation = clazz.getDeclaredAnnotation(FixedLine.class);
         if (annotation != null) {
             fixedFormatLine.startsWith = annotation.startsWith();
         }
@@ -66,7 +65,7 @@ public class FixedLength {
         return fixedFormatLine;
     }
 
-    public FixedLength registerLineType(final Class lineClass) {
+    public FixedLength<T> registerLineType(final Class<? extends T> lineClass) {
         lineTypes.add(classToLineDesc(lineClass));
         return this;
     }
@@ -78,38 +77,38 @@ public class FixedLength {
      * @param formatterClass formatter to pass through
      * @return instance of FixedLength
      */
-    public FixedLength registerFormatter(
+    public FixedLength<T> registerFormatter(
             final Class<? extends Serializable> typeClass,
             final Class<? extends Formatter> formatterClass) {
         formatters.put(typeClass, formatterClass);
         return this;
     }
 
-    public FixedLength stopSkipUnknownLines() {
+    public FixedLength<T> stopSkipUnknownLines() {
         skipUnknownLines = false;
         return this;
     }
 
-    public FixedLength registerLineTypes(final List<Class> lineClasses) {
+    public FixedLength<T> registerLineTypes(final List<Class<T>> lineClasses) {
         lineTypes.addAll(
                 lineClasses.stream()
-                        .map(c -> classToLineDesc(c))
+                        .map(this::classToLineDesc)
                         .collect(Collectors.toList())
         );
         return this;
     }
 
-    public FixedLength registerLineTypes(final Class[] lineClasses) {
+    public FixedLength<T> registerLineTypes(final Class[] lineClasses) {
         registerLineTypes(Arrays.asList(lineClasses));
         return this;
     }
 
-    public FixedLength usingCharset(Charset charset) {
+    public FixedLength<T> usingCharset(Charset charset) {
         this.charset = requireNonNull(charset, "Charset can't be null");
         return this;
     }
 
-    public FixedLength usingLineDelimiter(Pattern pattern) {
+    public FixedLength<T> usingLineDelimiter(Pattern pattern) {
         this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be  null");
         return this;
     }
@@ -124,7 +123,7 @@ public class FixedLength {
                 return null;
             }
         }
-        for (FixedFormatLine lineType : lineTypes) {
+        for (FixedFormatLine<? extends T> lineType : lineTypes) {
             if (
                     lineType.startsWith != null
                             &&
@@ -139,10 +138,10 @@ public class FixedLength {
         return null;
     }
 
-    private Object lineToObject(FixedFormatRecord record) {
-        Class clazz = record.fixedFormatLine.clazz;
-        String line = record.rawLine;
-        Object lineAsObject;
+    private T lineToObject(FixedFormatRecord fixedFormatRecord) {
+        Class<? extends T> clazz = fixedFormatRecord.fixedFormatLine.clazz;
+        String line = fixedFormatRecord.rawLine;
+        T lineAsObject;
         try {
             lineAsObject = clazz.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException e) {
@@ -156,7 +155,7 @@ public class FixedLength {
         }
 
 
-        for (FixedFormatField fixedFormatField : record.fixedFormatLine.fixedFormatFields) {
+        for (FixedFormatField fixedFormatField : fixedFormatRecord.fixedFormatLine.fixedFormatFields) {
             FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
             Field field = fixedFormatField.getField();
             int startOfFieldIndex = fieldAnnotation.offset() - 1;
@@ -171,7 +170,7 @@ public class FixedLength {
             if (!acceptFieldContent(str, fieldAnnotation)) {
                 continue;
             }
-            Formatter formatter = Formatter.instance(formatters, field.getType());
+            Formatter<T> formatter = Formatter.instance(formatters, field.getType());
             try {
                 field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
             } catch (IllegalAccessException e) {
@@ -197,9 +196,9 @@ public class FixedLength {
         return !pattern.matcher(content).matches();
     }
 
-    private List<Object> lineToObjects(FixedFormatRecord record) {
-        Object lineAsObject = this.lineToObject(record);
-        Method splitMethod = record.fixedFormatLine.splitAfterMethod;
+    private List<T> lineToObjects(FixedFormatRecord fixedFormatRecord) {
+        T lineAsObject = this.lineToObject(fixedFormatRecord);
+        Method splitMethod = fixedFormatRecord.fixedFormatLine.splitAfterMethod;
         if (splitMethod == null) {
             return Collections.singletonList(lineAsObject);
         }
@@ -209,25 +208,25 @@ public class FixedLength {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new FixedLengthException("Access to method failed", e);
         }
-        if (splitIndex >= record.rawLine.length()) {
+        if (splitIndex >= fixedFormatRecord.rawLine.length()) {
             return Collections.singletonList(lineAsObject);
         }
-        String subRawLine = record.rawLine.substring(splitIndex);
+        String subRawLine = fixedFormatRecord.rawLine.substring(splitIndex);
         FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
         if (subRecord == null) {
             return Collections.singletonList(lineAsObject);
         }
-        List<Object> lineAsObjects = new ArrayList<>();
+        List<T> lineAsObjects = new ArrayList<>();
         lineAsObjects.add(lineAsObject);
         lineAsObjects.addAll(lineToObjects(subRecord));
         return lineAsObjects;
     }
 
-    public List<Object> parse(InputStream stream) throws FixedLengthException {
+    public List<T> parse(InputStream stream) throws FixedLengthException {
         return this.parseAsStream(stream).collect(Collectors.toList());
     }
 
-    public Stream<Object> parseAsStream(InputStream inputStream)
+    public Stream<T> parseAsStream(InputStream inputStream)
             throws FixedLengthException {
         if (lineTypes.isEmpty()) {
             throw new FixedLengthException(
@@ -250,19 +249,19 @@ public class FixedLength {
 
     private final class FixedFormatRecord {
         private final String rawLine;
-        private final FixedFormatLine fixedFormatLine;
+        private final FixedFormatLine<? extends T> fixedFormatLine;
 
         private FixedFormatRecord(
                 final String rawLine,
-                final FixedFormatLine fixedFormatLine) {
+                final FixedFormatLine<? extends T> fixedFormatLine) {
             this.rawLine = rawLine;
             this.fixedFormatLine = fixedFormatLine;
         }
     }
 
-    private static class FixedFormatLine {
+    private static class FixedFormatLine<T> {
         private String startsWith = null;
-        private Class clazz;
+        private Class<? extends T> clazz;
         private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
         private Method splitAfterMethod;
 
@@ -274,11 +273,11 @@ public class FixedLength {
             this.startsWith = startsWith;
         }
 
-        public Class getClazz() {
+        public Class<? extends T> getClazz() {
             return clazz;
         }
 
-        public void setClazz(Class clazz) {
+        public void setClazz(Class<T> clazz) {
             this.clazz = clazz;
         }
     }
