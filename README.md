@@ -12,7 +12,17 @@ It works with `InputStream` so it is more memory efficient than store all file i
 
 ## Download
 
-This library is published to github packages, so you'll need to configure that in your repositories:
+This library is published to Maven Central and to Github packages, so you'll need to configure that in your repositories:
+
+Just ensure that you have 
+
+```groovy
+repositories {
+    mavenCentral()
+}
+```
+
+or optionally if you want you can get the package from the Github packages
 
 Gradle:
 ```groovy
