@@ -20,7 +20,7 @@ jobs:
       - name: Build with Gradle
         run: gradle build
       - name: Deploy to Github packages
-        run: gradle publish && gradle uploadArchives
+        run: ./gradlew publish && ./gradlew uploadArchives
         env:
           USERNAME: g0ddest
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
