@@ -2,7 +2,7 @@
  
  ![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
 
-This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length files.
+This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length (files with entities placed on fixed place in every line) files.
 
 Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso/fixed-length-file-handler) and [fixedformat4j](https://github.com/jeyben/fixedformat4j).
 
@@ -177,6 +177,16 @@ There are all fields in `FixedField` annotation:
 * `format` — parameters that goes to formatter. For example, it can be date format.
 * `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
 * `ignore` — the parser will ignore the field content if it matches the given regular expression. For example, `"0{8}"` will ignore `"00000000"`
+
+### Generics support
+
+You can also use generics to cast parsed object to desired class.
+It is more convenient if you have file with one entity type.
+
+```java
+List<Employee> parse = new FixedLength<Employee>()
+                .registerLineType(Employee.class);
+```
 
 ### Cases to use
 
