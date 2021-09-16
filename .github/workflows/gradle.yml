@@ -19,15 +19,18 @@ jobs:
           server-id: github
       - name: Build with Gradle
         run: ./gradlew build
+        env:
+          SIGNING_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.OSSRH_PASSWORD }}
       - name: Deploy to Github packages
-        run: ./gradlew publish && ./gradlew uploadArchives
+        run: ./gradlew publish
         env:
           USERNAME: g0ddest
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           SIGNING_KEY: ${{ secrets.OSSRH_PASSWORD }}
       - name: Deploy to Maven Central
-        run: gradle uploadArchives
+        run: ./gradlew uploadArchives
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
