@@ -7,4 +7,9 @@ public class StringFormatter extends Formatter<String> {
     public String asObject(String string, FixedField field) {
         return string;
     }
+
+    @Override
+    public String asString(String object, FixedField field) {
+        return object;
+    }
 }

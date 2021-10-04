@@ -7,4 +7,9 @@ public class IntegerFormatter extends Formatter<Integer> {
     public Integer asObject(String string, FixedField field) {
         return Integer.parseInt(string);
     }
+
+    @Override
+    public String asString(Integer object, FixedField field) {
+        return object.toString();
+    }
 }

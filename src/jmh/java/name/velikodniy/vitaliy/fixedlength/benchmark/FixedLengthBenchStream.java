@@ -1,6 +1,5 @@
 package name.velikodniy.vitaliy.fixedlength.benchmark;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 public class FixedLengthBenchStream extends InputStream {
@@ -16,7 +15,7 @@ public class FixedLengthBenchStream extends InputStream {
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() {
         if (position > string.length - 1 && currentIteration >= times - 1) {
             return -1;
         }

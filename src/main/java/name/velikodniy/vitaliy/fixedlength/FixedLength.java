@@ -154,7 +154,6 @@ public class FixedLength<T> {
             );
         }
 
-
         for (FixedFormatField fixedFormatField : fixedFormatRecord.fixedFormatLine.fixedFormatFields) {
             FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
             Field field = fixedFormatField.getField();
@@ -245,6 +244,11 @@ public class FixedLength<T> {
                 .map(this::fixedFormatLine)
                 .filter(Objects::nonNull)
                 .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
+    }
+
+    // TODO: implement it
+    public String format(List<T> lines) {
+        return "";
     }
 
     private final class FixedFormatRecord {
