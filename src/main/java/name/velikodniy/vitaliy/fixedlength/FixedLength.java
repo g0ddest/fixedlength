@@ -38,7 +38,8 @@ public class FixedLength<T> {
     private List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
     private Charset charset = Charset.defaultCharset();
-    private Pattern delimiter = Pattern.compile("\n");
+    private String delimiterString = "\n";
+    private Pattern delimiter = Pattern.compile(delimiterString);
 
     private FixedFormatLine<T> classToLineDesc(final Class<? extends T> clazz) {
         FixedFormatLine<T> fixedFormatLine = new FixedFormatLine<>();
@@ -109,7 +110,15 @@ public class FixedLength<T> {
     }
 
     public FixedLength<T> usingLineDelimiter(Pattern pattern) {
-        this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be  null");
+        this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be null");
+        return this;
+    }
+
+    public FixedLength<T> usingLineDelimiter(String delimiterString) {
+        this.delimiterString = requireNonNull(
+                delimiterString,
+                "Delimiter can't be null");
+        this.delimiter = Pattern.compile("delimiterString");
         return this;
     }
 
@@ -247,7 +256,56 @@ public class FixedLength<T> {
     }
 
     public String format(List<T> lines) {
-        return null;
+
+        final StringBuilder builder = new StringBuilder();
+
+        long currentLine = 1;
+
+        for (T line : lines) {
+
+            Arrays.stream(line.getClass().getFields())
+                .filter(
+                    f ->
+                        f.getAnnotation(FixedField.class) != null
+                )
+                .sorted((f1, f2) ->
+                        f1.getAnnotation(FixedField.class).offset() > f2.getAnnotation(FixedField.class).offset()
+                                ? 1 : -1
+                )
+                .forEach(f -> {
+                    FixedField fixedFieldAnnotation = f.getAnnotation(FixedField.class);
+
+                    Formatter<T> formatter = Formatter.instance(formatters, f.getType());
+                    String formattedString = null;
+                    try {
+                        T value = (T) f.get(line);
+                        if (value != null) {
+                            formattedString =
+                                    formatter.asString((T) f.get(line), fixedFieldAnnotation);
+
+                            String make = fixedFieldAnnotation.align().make(
+                                    formattedString,
+                                    fixedFieldAnnotation.length(),
+                                    fixedFieldAnnotation.padding()
+                            );
+                            builder.append(
+                                    make
+                            );
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                        throw new FixedLengthException(e.getMessage());
+                    }
+
+                });
+
+            if (lines.size() != currentLine++) {
+                builder.append(this.delimiterString);
+            }
+
+        }
+
+        return builder.toString();
     }
 
     private final class FixedFormatRecord {

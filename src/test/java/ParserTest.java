@@ -13,23 +13,23 @@ class ParserTest {
 
     String singleTypeExample =
             "Joe1      Smith     Developer 07500010012009\n" +
-                    "Joe3      Smith     Developer ";
+            "Joe3      Smith     Developer ";
 
     String mixedTypesExample =
             "EmplJoe1      Smith     Developer 07500010012009\n" +
-                    "CatSnowball  20200103\n" +
-                    "CatNoBirthDt 00000000\n" +
-                    "EmplJoe3      Smith     Developer ";
+            "CatSnowball  20200103\n" +
+            "CatNoBirthDt 00000000\n" +
+            "EmplJoe3      Smith     Developer ";
 
     String mixedTypesSplitRecordExample =
             "HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009\n" +
-                    "CatSnowball  20200103\n" +
-                    "EmplJoe3      Smith     Developer ";
+            "CatSnowball  20200103\n" +
+            "EmplJoe3      Smith     Developer ";
 
     String mixedTypesCustomDelimiter =
             "EmplJoe1      Smith     Developer 07500010012009@" +
-                    "CatSnowball  20200103@" +
-                    "EmplJoe3      Smith     Developer ";
+            "CatSnowball  20200103@" +
+            "EmplJoe3      Smith     Developer ";
 
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
