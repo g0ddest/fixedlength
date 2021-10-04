@@ -25,14 +25,17 @@ public class BigDecimalFormatter extends Formatter<BigDecimal> {
 
     @Override
     public String asString(BigDecimal object, FixedField field) {
-        if(object == null) return "0";
+        if (object == null) {
+            return "0";
+        }
 
         BigDecimal result;
 
-        if(field.divide() != 0)
+        if (field.divide() != 0) {
             result = object.multiply(BigDecimal.TEN.pow(field.divide()));
-        else
+        } else {
             result = object;
+        }
         return result.toPlainString();
     }
 }
