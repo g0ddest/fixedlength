@@ -10,7 +10,6 @@ import java.lang.annotation.Target;
  * current record to identify the index in the line for the next record. The specified method must
  * return an int.
  */
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface SplitLineAfter {

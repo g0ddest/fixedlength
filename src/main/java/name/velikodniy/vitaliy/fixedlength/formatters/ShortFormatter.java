@@ -7,4 +7,9 @@ public class ShortFormatter extends Formatter<Short> {
     public Short asObject(String string, FixedField field) {
         return Short.parseShort(string);
     }
+
+    @Override
+    public String asString(Short object, FixedField field) {
+        return object.toString();
+    }
 }

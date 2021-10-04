@@ -45,7 +45,9 @@ public abstract class Formatter<T> {
             try {
                 return formatterClass.getConstructor().newInstance();
             } catch (Exception e) {
-                throw new FixedLengthException("Cannot create new instance of formatter " + formatterClass.getName());
+                throw new FixedLengthException(
+                        "Cannot create new instance of formatter " + formatterClass.getName()
+                );
             }
         } else {
             throw new FixedLengthException("Not found formatter for class " + type.getName());
@@ -62,4 +64,6 @@ public abstract class Formatter<T> {
     }
 
     public abstract T asObject(String string, FixedField field);
+
+    public abstract String asString(T object, FixedField field);
 }

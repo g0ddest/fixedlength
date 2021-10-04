@@ -7,16 +7,30 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DateFormatter extends Formatter<Date> {
-    @Override
-    public Date asObject(String string, FixedField field) {
-        String format = "yyyyMMdd";
+
+    private static final String DEFAULT_FORMAT = "yyyyMMdd";
+
+    private static SimpleDateFormat format(FixedField field) {
+        String format;
         if (!field.format().isEmpty()) {
             format = field.format();
+        } else {
+            format = DEFAULT_FORMAT;
         }
+        return new SimpleDateFormat(format);
+    }
+
+    @Override
+    public Date asObject(String string, FixedField field) {
         try {
-            return new SimpleDateFormat(format).parse(string);
+            return format(field).parse(string);
         } catch (ParseException e) {
             return null;
         }
+    }
+
+    @Override
+    public String asString(Date object, FixedField field) {
+        return format(field).format(object);
     }
 }
