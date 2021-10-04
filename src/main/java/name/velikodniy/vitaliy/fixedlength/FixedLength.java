@@ -246,9 +246,8 @@ public class FixedLength<T> {
                 .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
     }
 
-    // TODO: implement it
     public String format(List<T> lines) {
-        return "";
+        return null;
     }
 
     private final class FixedFormatRecord {
