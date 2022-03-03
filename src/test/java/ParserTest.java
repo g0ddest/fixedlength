@@ -26,6 +26,11 @@ class ParserTest {
             "CatSnowball  20200103\n" +
             "EmplJoe3      Smith     Developer ";
 
+    String mixedTypesWrongSplitRecordExample =
+            "HEADERMy Title  00        EmplJoe1      Smith     Developer 07500010012009\n" +
+                    "CatSnowball  20200103\n" +
+                    "EmplJoe3      Smith     Developer ";
+
     String mixedTypesCustomDelimiter =
             "EmplJoe1      Smith     Developer 07500010012009@" +
             "CatSnowball  20200103@" +
@@ -89,6 +94,21 @@ class ParserTest {
         assert parse.get(1) instanceof EmployeeMixed;
         assert parse.get(2) instanceof CatMixed;
         assert parse.get(3) instanceof EmployeeMixed;
+    }
+
+    @Test
+    @DisplayName("Parse as input stream with default charset and mixed line type with wrong split record")
+    void testParseMixedLineTypeWrongSplit() throws FixedLengthException {
+        List<Object> parse = new FixedLength<>()
+                .registerLineType(HeaderSplit.class)
+                .registerLineType(EmployeeMixed.class)
+                .registerLineType(CatMixed.class)
+                .parse(new ByteArrayInputStream(mixedTypesWrongSplitRecordExample.getBytes()));
+
+        assert parse.size() == 3;
+        assert parse.get(0) instanceof HeaderSplit;
+        assert parse.get(1) instanceof CatMixed;
+        assert parse.get(2) instanceof EmployeeMixed;
     }
 
     @Test

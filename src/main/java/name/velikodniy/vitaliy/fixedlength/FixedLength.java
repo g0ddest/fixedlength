@@ -216,7 +216,7 @@ public class FixedLength<T> {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new FixedLengthException("Access to method failed", e);
         }
-        if (splitIndex >= fixedFormatRecord.rawLine.length()) {
+        if (splitIndex <= 0 || splitIndex >= fixedFormatRecord.rawLine.length()) {
             return Collections.singletonList(lineAsObject);
         }
         String subRawLine = fixedFormatRecord.rawLine.substring(splitIndex);
