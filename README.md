@@ -8,7 +8,8 @@ Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso
 
 One of its advantages is support mixed line types.
 
-It works with `InputStream` so it is more memory efficient than store all file in memory. This is big advantage when working with big files.  
+It works with `InputStream` so it is more memory efficient than store all file in memory. This is big 
+advantage when working with big files.  
 
 ## Download
 
@@ -46,19 +47,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.6</version>
+  <version>0.7</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.6'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.7'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.6'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.7'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
