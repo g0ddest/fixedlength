@@ -10,13 +10,13 @@ public class Employee implements Row {
     public String firstName;
 
     @FixedField(offset = 11, length = 10, align = Align.LEFT)
-    public String lastName;
+    String lastName;
 
     @FixedField(offset = 21, length = 10, align = Align.LEFT)
-    public String title;
+    protected String title;
 
     @FixedField(offset = 31, length = 6, padding = '0')
-    public BigDecimal salary;
+    private BigDecimal salary;
 
     @FixedField(offset = 37, length = 8, format = "MMddyyyy")
     public LocalDate hireDate;

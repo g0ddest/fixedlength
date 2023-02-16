@@ -48,7 +48,7 @@ public class FixedLength<T> {
         if (annotation != null) {
             fixedFormatLine.startsWith = annotation.startsWith();
         }
-        for (Field field : clazz.getFields()) {
+        for (Field field : clazz.getDeclaredFields()) {
             FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
             if (fieldAnnotation == null) {
                 continue;
@@ -179,6 +179,9 @@ public class FixedLength<T> {
                 continue;
             }
             Formatter<T> formatter = Formatter.instance(formatters, field.getType());
+
+            field.setAccessible(true);
+
             try {
                 field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
             } catch (IllegalAccessException e) {
@@ -263,7 +266,7 @@ public class FixedLength<T> {
 
         for (T line : lines) {
 
-            Arrays.stream(line.getClass().getFields())
+            Arrays.stream(line.getClass().getDeclaredFields())
                 .filter(
                     f ->
                         f.getAnnotation(FixedField.class) != null
@@ -277,6 +280,9 @@ public class FixedLength<T> {
 
                     Formatter<T> formatter = Formatter.instance(formatters, f.getType());
                     String formattedString = null;
+
+                    f.setAccessible(true);
+
                     try {
                         T value = (T) f.get(line);
                         if (value != null) {
