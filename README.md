@@ -47,19 +47,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.7</version>
+  <version>0.8</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.7'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.8'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.7'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.8'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
