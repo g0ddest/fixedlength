@@ -1,6 +1,7 @@
  # Fixed Length handler for Java
  
- ![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
+[![Maven Central](https://img.shields.io/maven-central/v/name.velikodniy.vitaliy/fixedlength)](https://search.maven.org/artifact/name.velikodniy.vitaliy/fixedlength)
+![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
 
 This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length (files with entities placed on fixed place in every line) files.
 
@@ -47,19 +48,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.7</version>
+  <version>0.8</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.7'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.8'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.7'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.8'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
