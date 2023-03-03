@@ -11,13 +11,7 @@ public class DateFormatter extends Formatter<Date> {
     private static final String DEFAULT_FORMAT = "yyyyMMdd";
 
     private static SimpleDateFormat format(FixedField field) {
-        String format;
-        if (!field.format().isEmpty()) {
-            format = field.format();
-        } else {
-            format = DEFAULT_FORMAT;
-        }
-        return new SimpleDateFormat(format);
+        return new SimpleDateFormat(!field.format().isEmpty() ? field.format() : DEFAULT_FORMAT);
     }
 
     @Override

@@ -5,15 +5,13 @@ import java.util.Arrays;
 public enum Align {
     RIGHT {
         public String make(String data, int length, char paddingChar) {
-            String result;
+            String result = Align.leftPad(data, length, paddingChar);
             if (data == null) {
                 data = "";
             }
             int dataLength = data.length();
             if (dataLength > length) {
                 result = Align.substring(data, dataLength - length, dataLength);
-            } else {
-                result = Align.leftPad(data, length, paddingChar);
             }
             return result;
         }
@@ -34,15 +32,13 @@ public enum Align {
     },
     LEFT {
         public String make(String data, int length, char paddingChar) {
-            String result;
+            String result = Align.rightPad(data, length, paddingChar);
             if (data == null) {
                 data = "";
             }
             int dataLength = data.length();
             if (dataLength > length) {
                 result = Align.substring(data, 0, length);
-            } else {
-                result = Align.rightPad(data, length, paddingChar);
             }
             return result;
         }

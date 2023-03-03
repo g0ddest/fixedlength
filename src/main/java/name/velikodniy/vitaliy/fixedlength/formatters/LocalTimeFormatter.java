@@ -10,13 +10,7 @@ public class LocalTimeFormatter extends Formatter<LocalTime> {
     private static final String DEFAULT_FORMAT = "HHmmss";
 
     private static DateTimeFormatter format(FixedField field) {
-        String format;
-        if (!field.format().isEmpty()) {
-            format = field.format();
-        } else {
-            format = DEFAULT_FORMAT;
-        }
-        return DateTimeFormatter.ofPattern(format);
+        return DateTimeFormatter.ofPattern(!field.format().isEmpty() ? field.format() : DEFAULT_FORMAT);
     }
 
     @Override
