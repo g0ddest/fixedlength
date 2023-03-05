@@ -246,7 +246,7 @@ public class FixedLength<T> {
 
         return StreamSupport.stream(
                         Spliterators.spliterator(
-                                new Scanner(inputStream, this.charset).useDelimiter(this.delimiter),
+                                new Scanner(inputStream, this.charset.name()).useDelimiter(this.delimiter),
                                 Long.MAX_VALUE,
                                 Spliterator.ORDERED | Spliterator.NONNULL
                         ), false)
