@@ -44,7 +44,7 @@ public class BenchmarkRunner {
     @Benchmark
     public void mixed() {
 
-        List<Object> parse = new FixedLength()
+        List<Object> parse = new FixedLength<>()
                 .registerLineType(EmployeeMixed.class)
                 .parse(stream);
     }

@@ -1,8 +1,5 @@
 package name.velikodniy.vitaliy.fixedlength.formatters;
 
-import name.velikodniy.vitaliy.fixedlength.FixedLengthException;
-import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,35 +8,36 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import name.velikodniy.vitaliy.fixedlength.FixedLengthException;
+import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 
-@SuppressWarnings("rawtypes")
 public abstract class Formatter<T> {
-    private static Map<Class<? extends Serializable>, Class<? extends Formatter>> defaultFormatters = new HashMap<>();
+    private static final Map<Class<? extends Serializable>, Class<? extends Formatter<?>>> DEFAULT_FORMATTERS = new HashMap<>();
 
-    public static Map<Class<? extends Serializable>, Class<? extends Formatter>> getDefaultFormatters() {
-        return defaultFormatters;
+    public static Map<Class<? extends Serializable>, Class<? extends Formatter<?>>> getDefaultFormatters() {
+        return DEFAULT_FORMATTERS;
     }
 
     static {
-        defaultFormatters.put(String.class, StringFormatter.class);
-        defaultFormatters.put(short.class, ShortFormatter.class);
-        defaultFormatters.put(Short.class, ShortFormatter.class);
-        defaultFormatters.put(int.class, IntegerFormatter.class);
-        defaultFormatters.put(Integer.class, IntegerFormatter.class);
-        defaultFormatters.put(long.class, LongFormatter.class);
-        defaultFormatters.put(Long.class, LongFormatter.class);
-        defaultFormatters.put(Date.class, DateFormatter.class);
-        defaultFormatters.put(LocalDate.class, LocalDateFormatter.class);
-        defaultFormatters.put(LocalTime.class, LocalTimeFormatter.class);
-        defaultFormatters.put(LocalDateTime.class, LocalDateTimeFormatter.class);
-        defaultFormatters.put(BigDecimal.class, BigDecimalFormatter.class);
+        DEFAULT_FORMATTERS.put(String.class, StringFormatter.class);
+        DEFAULT_FORMATTERS.put(short.class, ShortFormatter.class);
+        DEFAULT_FORMATTERS.put(Short.class, ShortFormatter.class);
+        DEFAULT_FORMATTERS.put(int.class, IntegerFormatter.class);
+        DEFAULT_FORMATTERS.put(Integer.class, IntegerFormatter.class);
+        DEFAULT_FORMATTERS.put(long.class, LongFormatter.class);
+        DEFAULT_FORMATTERS.put(Long.class, LongFormatter.class);
+        DEFAULT_FORMATTERS.put(Date.class, DateFormatter.class);
+        DEFAULT_FORMATTERS.put(LocalDate.class, LocalDateFormatter.class);
+        DEFAULT_FORMATTERS.put(LocalTime.class, LocalTimeFormatter.class);
+        DEFAULT_FORMATTERS.put(LocalDateTime.class, LocalDateTimeFormatter.class);
+        DEFAULT_FORMATTERS.put(BigDecimal.class, BigDecimalFormatter.class);
     }
 
-    public static Formatter instance(
+    public static Formatter<?> instance(
             Map<Class<? extends Serializable>,
-                    Class<? extends Formatter>> formatters, final Class<?> type
+                    Class<? extends Formatter<?>>> formatters, final Class<?> type
     ) throws FixedLengthException {
-        Class<? extends Formatter> formatterClass = formatters.get(type);
+        Class<? extends Formatter<?>> formatterClass = formatters.get(type);
 
         if (formatterClass != null) {
             try {

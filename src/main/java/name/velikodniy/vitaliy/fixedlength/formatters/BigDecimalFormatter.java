@@ -29,13 +29,12 @@ public class BigDecimalFormatter extends Formatter<BigDecimal> {
             return "0";
         }
 
-        BigDecimal result;
+        BigDecimal result = object;
 
         if (field.divide() != 0) {
             result = object.multiply(BigDecimal.TEN.pow(field.divide()));
-        } else {
-            result = object;
         }
+
         return result.toPlainString();
     }
 }

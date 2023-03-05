@@ -1,5 +1,6 @@
 package name.velikodniy.vitaliy.fixedlength;
 
+import java.util.Comparator;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
 import name.velikodniy.vitaliy.fixedlength.annotation.SplitLineAfter;
@@ -27,15 +28,14 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 
-@SuppressWarnings("ALL")
 public class FixedLength<T> {
 
-    private static Map<
+    private static final Map<
             Class<? extends Serializable>,
-            Class<? extends Formatter>
-            > formatters
+            Class<? extends Formatter<?>>
+            > FORMATTERS
             = Formatter.getDefaultFormatters();
-    private List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
+    private final List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
     private Charset charset = Charset.defaultCharset();
     private String delimiterString = "\n";
@@ -80,8 +80,8 @@ public class FixedLength<T> {
      */
     public FixedLength<T> registerFormatter(
             final Class<? extends Serializable> typeClass,
-            final Class<? extends Formatter> formatterClass) {
-        formatters.put(typeClass, formatterClass);
+            final Class<? extends Formatter<?>> formatterClass) {
+        FORMATTERS.put(typeClass, formatterClass);
         return this;
     }
 
@@ -99,7 +99,7 @@ public class FixedLength<T> {
         return this;
     }
 
-    public FixedLength<T> registerLineTypes(final Class[] lineClasses) {
+    public FixedLength<T> registerLineTypes(final Class<T>[] lineClasses) {
         registerLineTypes(Arrays.asList(lineClasses));
         return this;
     }
@@ -178,12 +178,11 @@ public class FixedLength<T> {
             if (!acceptFieldContent(str, fieldAnnotation)) {
                 continue;
             }
-            Formatter<T> formatter = Formatter.instance(formatters, field.getType());
 
             field.setAccessible(true);
 
             try {
-                field.set(lineAsObject, formatter.asObject(str, fieldAnnotation));
+                field.set(lineAsObject, Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation));
             } catch (IllegalAccessException e) {
                 throw new FixedLengthException("Access to field failed", e);
             }
@@ -245,11 +244,9 @@ public class FixedLength<T> {
             );
         }
 
-        Scanner scanner = new Scanner(inputStream, this.charset.name())
-                .useDelimiter(this.delimiter);
         return StreamSupport.stream(
                         Spliterators.spliterator(
-                                scanner,
+                                new Scanner(inputStream, this.charset).useDelimiter(this.delimiter),
                                 Long.MAX_VALUE,
                                 Spliterator.ORDERED | Spliterator.NONNULL
                         ), false)
@@ -271,38 +268,30 @@ public class FixedLength<T> {
                     f ->
                         f.getAnnotation(FixedField.class) != null
                 )
-                .sorted((f1, f2) ->
-                        f1.getAnnotation(FixedField.class).offset() > f2.getAnnotation(FixedField.class).offset()
-                                ? 1 : -1
-                )
+                .sorted(Comparator.comparingInt(f -> f.getAnnotation(FixedField.class).offset()))
                 .forEach(f -> {
                     FixedField fixedFieldAnnotation = f.getAnnotation(FixedField.class);
 
-                    Formatter<T> formatter = Formatter.instance(formatters, f.getType());
-                    String formattedString = null;
+                    Formatter<T> formatter = (Formatter<T>) Formatter.instance(FORMATTERS, f.getType());
 
                     f.setAccessible(true);
 
+                    T value;
                     try {
-                        T value = (T) f.get(line);
-                        if (value != null) {
-                            formattedString =
-                                    formatter.asString((T) f.get(line), fixedFieldAnnotation);
-
-                            String make = fixedFieldAnnotation.align().make(
-                                    formattedString,
-                                    fixedFieldAnnotation.length(),
-                                    fixedFieldAnnotation.padding()
-                            );
-                            builder.append(
-                                    make
-                            );
-                        }
+                         value = (T) f.get(line);
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                         throw new FixedLengthException(e.getMessage());
                     }
 
+                    if (value != null) {
+                        builder.append(
+                                fixedFieldAnnotation.align().make(
+                                        formatter.asString(value, fixedFieldAnnotation),
+                                        fixedFieldAnnotation.length(),
+                                        fixedFieldAnnotation.padding())
+                        );
+                    }
                 });
 
             if (lines.size() != currentLine++) {

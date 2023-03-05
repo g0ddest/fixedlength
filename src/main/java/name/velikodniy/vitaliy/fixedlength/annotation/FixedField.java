@@ -42,14 +42,14 @@ public @interface FixedField {
     String format() default "";
 
     /**
-     * If number fields should be divided. For example we have 000101 and we need to get BigDecimal 1.01
+     * If number fields should be divided. For example, we have 000101, and we need to get BigDecimal 1.01
      *
      * @return divide to 10^(divide)
      */
     int divide() default 0;
 
     /**
-     * Ignore field content if is matches this regular expresion pattern.
+     * Ignore field content if is matches this regular expression pattern.
      * @return pattern matching content to ignore
      */
     String ignore() default "";
