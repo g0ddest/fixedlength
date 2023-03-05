@@ -12,7 +12,8 @@ import name.velikodniy.vitaliy.fixedlength.FixedLengthException;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 
 public abstract class Formatter<T> {
-    private static final Map<Class<? extends Serializable>, Class<? extends Formatter<?>>> DEFAULT_FORMATTERS = new HashMap<>();
+    private static final Map<Class<? extends Serializable>, Class<? extends Formatter<?>>> DEFAULT_FORMATTERS
+            = new HashMap<>();
 
     public static Map<Class<? extends Serializable>, Class<? extends Formatter<?>>> getDefaultFormatters() {
         return DEFAULT_FORMATTERS;
