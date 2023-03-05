@@ -21,8 +21,6 @@ public class FormatterTest {
         List<Row> parse = impl
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
-        System.out.println(impl.format(parse));
-
         assert singleTypeExample.equals(impl.format(parse));
 
     }
