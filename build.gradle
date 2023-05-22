@@ -12,6 +12,7 @@ plugins {
     id 'checkstyle'
     id 'me.champeau.jmh' version '0.6.6'
     id 'signing'
+    id 'jacoco'
 }
 
 group 'name.velikodniy.vitaliy'
@@ -119,5 +120,11 @@ uploadArchives {
                 }
             }
         }
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
     }
 }
