@@ -13,6 +13,7 @@ plugins {
     id 'me.champeau.jmh' version '0.6.6'
     id 'signing'
     id 'jacoco'
+    id 'org.sonarqube' version '3.5.0.2730'
 }
 
 group 'name.velikodniy.vitaliy'
@@ -126,5 +127,13 @@ uploadArchives {
 jacocoTestReport {
     reports {
         xml.enabled true
+    }
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "g0ddest_fixedlength"
+        property "sonar.organization", "g0ddest"
+        property "sonar.host.url", "https://sonarcloud.io"
     }
 }
