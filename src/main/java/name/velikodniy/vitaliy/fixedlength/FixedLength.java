@@ -32,7 +32,7 @@ public class FixedLength<T> {
 
     private static final Map<
             Class<? extends Serializable>,
-            Class<? extends Formatter<?>>
+            Class<? extends Formatter<? extends Serializable>>
             > FORMATTERS
             = Formatter.getDefaultFormatters();
     private final List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
@@ -80,7 +80,7 @@ public class FixedLength<T> {
      */
     public FixedLength<T> registerFormatter(
             final Class<? extends Serializable> typeClass,
-            final Class<? extends Formatter<?>> formatterClass) {
+            final Class<? extends Formatter<? extends Serializable>> formatterClass) {
         FORMATTERS.put(typeClass, formatterClass);
         return this;
     }
@@ -159,7 +159,7 @@ public class FixedLength<T> {
                 | InstantiationException
                 | InvocationTargetException e) {
             throw new FixedLengthException(
-                    "Unable to instanciate " + clazz.getName(), e
+                    "Unable to instantiate " + clazz.getName(), e
             );
         }
 
@@ -175,16 +175,17 @@ public class FixedLength<T> {
                     startOfFieldIndex,
                     endOfFieldIndex
             ), fieldAnnotation.padding());
-            if (!acceptFieldContent(str, fieldAnnotation)) {
-                continue;
-            }
+            if (acceptFieldContent(str, fieldAnnotation)) {
+                field.setAccessible(true);
 
-            field.setAccessible(true);
-
-            try {
-                field.set(lineAsObject, Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation));
-            } catch (IllegalAccessException e) {
-                throw new FixedLengthException("Access to field failed", e);
+                try {
+                    field.set(
+                            lineAsObject,
+                            Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation)
+                    );
+                } catch (IllegalAccessException e) {
+                    throw new FixedLengthException("Access to field failed", e);
+                }
             }
         }
         return lineAsObject;
@@ -280,8 +281,7 @@ public class FixedLength<T> {
                     try {
                          value = (T) f.get(line);
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                        throw new FixedLengthException(e.getMessage());
+                        throw new FixedLengthException(e.getMessage(), e);
                     }
 
                     if (value != null) {

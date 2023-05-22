@@ -9,6 +9,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 class ParserTest {
 
     String singleTypeExample =
@@ -43,7 +48,7 @@ class ParserTest {
                 .registerLineType(Employee.class)
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
-        assert parse.size() == 2;
+        assertEquals(parse.size(), 2);
     }
 
     @Test
@@ -55,7 +60,7 @@ class ParserTest {
                 .parse(
                         new ByteArrayInputStream(singleTypeExample.getBytes(StandardCharsets.US_ASCII)));
 
-        assert parse.size() == 2;
+        assertEquals(parse.size(), 2);
     }
 
     @Test
@@ -66,18 +71,18 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesExample.getBytes()));
 
-        assert parse.size() == 4;
-        assert parse.get(0) instanceof EmployeeMixed;
-        assert parse.get(1) instanceof CatMixed;
-        assert parse.get(2) instanceof CatMixed;
-        assert parse.get(3) instanceof EmployeeMixed;
+        assertEquals(parse.size(), 4);
+        assertThat(parse.get(0), instanceOf(EmployeeMixed.class));
+        assertThat(parse.get(1), instanceOf(CatMixed.class));
+        assertThat(parse.get(2), instanceOf(CatMixed.class));
+        assertThat(parse.get(3), instanceOf(EmployeeMixed.class));
         EmployeeMixed employeeMixed = (EmployeeMixed) parse.get(0);
-        assert "Joe1".equals(employeeMixed.firstName);
-        assert "Smith".equals(employeeMixed.lastName);
+        assertEquals("Joe1", employeeMixed.firstName);
+        assertEquals("Smith", employeeMixed.lastName);
         CatMixed catMixed = (CatMixed) parse.get(1);
-        assert LocalDate.of(2020, 1, 3).equals(catMixed.birthDate);
+        assertEquals(LocalDate.of(2020, 1, 3), catMixed.birthDate);
         catMixed = (CatMixed) parse.get(2);
-        assert catMixed.birthDate == null;
+        assertNull(catMixed.birthDate);
     }
 
     @Test
@@ -89,11 +94,11 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesSplitRecordExample.getBytes()));
 
-        assert parse.size() == 4;
-        assert parse.get(0) instanceof HeaderSplit;
-        assert parse.get(1) instanceof EmployeeMixed;
-        assert parse.get(2) instanceof CatMixed;
-        assert parse.get(3) instanceof EmployeeMixed;
+        assertEquals(parse.size(), 4);
+        assertThat(parse.get(0), instanceOf(HeaderSplit.class));
+        assertThat(parse.get(1), instanceOf(EmployeeMixed.class));
+        assertThat(parse.get(2), instanceOf(CatMixed.class));
+        assertThat(parse.get(3), instanceOf(EmployeeMixed.class));
     }
 
     @Test
@@ -105,10 +110,10 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesWrongSplitRecordExample.getBytes()));
 
-        assert parse.size() == 3;
-        assert parse.get(0) instanceof HeaderSplit;
-        assert parse.get(1) instanceof CatMixed;
-        assert parse.get(2) instanceof EmployeeMixed;
+        assertEquals(parse.size(), 3);
+        assertThat(parse.get(0), instanceOf(HeaderSplit.class));
+        assertThat(parse.get(1), instanceOf(CatMixed.class));
+        assertThat(parse.get(2), instanceOf(EmployeeMixed.class));
     }
 
     @Test
@@ -120,7 +125,6 @@ class ParserTest {
                 .usingLineDelimiter(Pattern.compile("@"))
                 .parse(new ByteArrayInputStream(mixedTypesCustomDelimiter.getBytes()));
 
-        assert parse.size() == 3;
-
+        assertEquals(parse.size(), 3);
     }
 }
