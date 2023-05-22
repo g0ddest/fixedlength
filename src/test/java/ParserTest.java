@@ -48,7 +48,7 @@ class ParserTest {
                 .registerLineType(Employee.class)
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
-        assertEquals(parse.size(), 2);
+        assertEquals(2, parse.size());
     }
 
     @Test
@@ -60,7 +60,7 @@ class ParserTest {
                 .parse(
                         new ByteArrayInputStream(singleTypeExample.getBytes(StandardCharsets.US_ASCII)));
 
-        assertEquals(parse.size(), 2);
+        assertEquals(2, parse.size());
     }
 
     @Test
@@ -71,7 +71,7 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesExample.getBytes()));
 
-        assertEquals(parse.size(), 4);
+        assertEquals(4, parse.size());
         assertThat(parse.get(0), instanceOf(EmployeeMixed.class));
         assertThat(parse.get(1), instanceOf(CatMixed.class));
         assertThat(parse.get(2), instanceOf(CatMixed.class));
@@ -94,7 +94,7 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesSplitRecordExample.getBytes()));
 
-        assertEquals(parse.size(), 4);
+        assertEquals(4, parse.size());
         assertThat(parse.get(0), instanceOf(HeaderSplit.class));
         assertThat(parse.get(1), instanceOf(EmployeeMixed.class));
         assertThat(parse.get(2), instanceOf(CatMixed.class));
@@ -110,7 +110,7 @@ class ParserTest {
                 .registerLineType(CatMixed.class)
                 .parse(new ByteArrayInputStream(mixedTypesWrongSplitRecordExample.getBytes()));
 
-        assertEquals(parse.size(), 3);
+        assertEquals(3, parse.size());
         assertThat(parse.get(0), instanceOf(HeaderSplit.class));
         assertThat(parse.get(1), instanceOf(CatMixed.class));
         assertThat(parse.get(2), instanceOf(EmployeeMixed.class));
@@ -125,6 +125,6 @@ class ParserTest {
                 .usingLineDelimiter(Pattern.compile("@"))
                 .parse(new ByteArrayInputStream(mixedTypesCustomDelimiter.getBytes()));
 
-        assertEquals(parse.size(), 3);
+        assertEquals(3, parse.size());
     }
 }
