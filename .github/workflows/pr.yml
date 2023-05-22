@@ -14,7 +14,7 @@ jobs:
           java-version: 1.8
           server-id: github
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew test jacocoTestReport
       - name: Check styles of main
         run: ./gradlew checkstyleMain
       - name: Check styles of test
