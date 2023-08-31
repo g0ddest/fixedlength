@@ -12,6 +12,8 @@ class FormatterTest {
     String singleTypeExample =
             "Joe1      Smith     Developer 07500010012009\n" +
             "Joe3      Smith     Developer ";
+    String badLocalDateExample =
+            "Joe1      Smith     Developer 07500015012009";
 
     @Test
     @DisplayName("Simple string format")
@@ -25,6 +27,21 @@ class FormatterTest {
 
         assertEquals(singleTypeExample, impl.format(parse));
 
+    }
+
+    @Test
+    @DisplayName("Bad Local Date")
+    void badLocalDate() {
+
+        FixedLength<Row> impl = new FixedLength<Row>()
+                .registerLineType(Employee.class);
+
+        List<Row> parse = impl
+                .parse(new ByteArrayInputStream(badLocalDateExample.getBytes()));
+
+        Employee employee = (Employee) parse.get(0);
+
+        assertEquals(employee.hireDate, null);
     }
 
 }
