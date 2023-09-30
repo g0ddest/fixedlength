@@ -6,19 +6,23 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ParserTest {
 
     String singleTypeExample =
             "Joe1      Smith     Developer 07500010012009\n" +
             "Joe3      Smith     Developer ";
+
+    String singleTypeWithErrorExample =
+            "Joe1      Smith     Developer 07500010012009\n" +
+            "Joe1      Smith     Developer 07500013012009";
 
     String mixedTypesExample =
             "EmplJoe1      Smith     Developer 07500010012009\n" +
@@ -49,6 +53,38 @@ class ParserTest {
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
         assertEquals(2, parse.size());
+    }
+
+    @Test
+    @DisplayName("Parse as input stream with throwing exception when format erroneous fields")
+    void testParseThrowsExceptionOnInvalidFormat() throws FixedLengthException {
+        assertThrows(DateTimeParseException.class, () ->
+                new FixedLength<Row>()
+                    .registerLineType(Employee.class)
+                    .parse(new ByteArrayInputStream(singleTypeWithErrorExample.getBytes())));
+    }
+
+    @Test
+    @DisplayName("Parse as input stream with skipping format erroneous fields")
+    void testParseWithSkippingErroneousFields() throws FixedLengthException {
+        List<Row> parse = new FixedLength<Row>()
+                .registerLineType(Employee.class)
+                .skipErroneousFields()
+                .parse(new ByteArrayInputStream(singleTypeWithErrorExample.getBytes()));
+
+        assertEquals(2, parse.size());
+        assertNull(((Employee) parse.get(1)).hireDate);
+    }
+
+    @Test
+    @DisplayName("Parse as input stream with skipping format erroneous lines")
+    void testParseWithSkippingErroneousLines() throws FixedLengthException {
+        List<Row> parse = new FixedLength<Row>()
+                .registerLineType(Employee.class)
+                .skipErroneousLines()
+                .parse(new ByteArrayInputStream(singleTypeWithErrorExample.getBytes()));
+
+        assertEquals(1, parse.size());
     }
 
     @Test
