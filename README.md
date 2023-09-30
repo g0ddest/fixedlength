@@ -191,6 +191,17 @@ List<Employee> parse = new FixedLength<Employee>()
                 .registerLineType(Employee.class);
 ```
 
+### Ignoring errors
+
+If there is errors on your line format there are two modes that you could skip these errors if you want to:
+
+* `skipErroneousLines` — line with error will not be added to result.
+* `skipErroneousFields` — fields with errors will be `null`.
+
+In both cases warnings will be raised in logs.
+
+By default, exception will be raised for entire process.
+
 ### Cases to use
 
 In the case if you have 2 different records in one line and there is a split index you can add a method in your entity that should return index of the next record and mark it with annotation `SplitLineAfter`.

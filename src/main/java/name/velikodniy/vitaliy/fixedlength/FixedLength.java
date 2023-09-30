@@ -1,6 +1,5 @@
 package name.velikodniy.vitaliy.fixedlength;
 
-import java.util.Comparator;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
 import name.velikodniy.vitaliy.fixedlength.annotation.SplitLineAfter;
@@ -12,15 +11,17 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Scanner;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.Map;
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +31,8 @@ import static java.util.Objects.requireNonNull;
 
 public class FixedLength<T> {
 
+    private static final Logger LOGGER = Logger.getLogger(FixedLength.class.getName());
+
     private static final Map<
             Class<? extends Serializable>,
             Class<? extends Formatter<? extends Serializable>>
@@ -37,6 +40,8 @@ public class FixedLength<T> {
             = Formatter.getDefaultFormatters();
     private final List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
+    private boolean skipErroneousFields = false;
+    private boolean skipErroneousLines = false;
     private Charset charset = Charset.defaultCharset();
     private String delimiterString = "\n";
     private Pattern delimiter = Pattern.compile(delimiterString);
@@ -87,6 +92,16 @@ public class FixedLength<T> {
 
     public FixedLength<T> stopSkipUnknownLines() {
         skipUnknownLines = false;
+        return this;
+    }
+
+    public FixedLength<T> skipErroneousFields() {
+        skipErroneousFields = true;
+        return this;
+    }
+
+    public FixedLength<T> skipErroneousLines() {
+        skipErroneousLines = true;
         return this;
     }
 
@@ -156,8 +171,8 @@ public class FixedLength<T> {
         } catch (NoSuchMethodException e) {
             throw new FixedLengthException("No empty constructor in class", e);
         } catch (IllegalAccessException
-                | InstantiationException
-                | InvocationTargetException e) {
+                 | InstantiationException
+                 | InvocationTargetException e) {
             throw new FixedLengthException(
                     "Unable to instantiate " + clazz.getName(), e
             );
@@ -176,19 +191,35 @@ public class FixedLength<T> {
                     endOfFieldIndex
             ), fieldAnnotation.padding());
             if (acceptFieldContent(str, fieldAnnotation)) {
-                field.setAccessible(true);
-
-                try {
-                    field.set(
-                            lineAsObject,
-                            Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation)
-                    );
-                } catch (IllegalAccessException e) {
-                    throw new FixedLengthException("Access to field failed", e);
-                }
+                fillField(field, lineAsObject, str, fieldAnnotation);
             }
         }
         return lineAsObject;
+    }
+
+    private void fillField(Field field, T lineAsObject, String str, FixedField fieldAnnotation) {
+        field.setAccessible(true);
+
+        try {
+            field.set(
+                    lineAsObject,
+                    Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation)
+            );
+        } catch (IllegalAccessException e) {
+            throw new FixedLengthException("Access to field failed", e);
+        } catch (Exception e) {
+            if (e instanceof FixedLengthException) {
+                throw e;
+            }
+            if (!skipErroneousFields) {
+                throw e;
+            }
+            LOGGER.warning(String.format(
+                    "Skipping field of type %s with error in value %s",
+                    field.getType(),
+                    str
+            ));
+        }
     }
 
     private boolean acceptFieldContent(String content, FixedField fieldAnnotation) {
@@ -199,38 +230,49 @@ public class FixedLength<T> {
             return false;
         }
         if (fieldAnnotation.ignore().isEmpty()) {
-            // No ignore cotent defined, accepting
+            // No ignore content defined, accepting
             return true;
         }
-        // Ignore cotent defined: accepting if not matching ignore regular expression
+        // Ignore content defined: accepting if not matching ignore regular expression
         Pattern pattern = Pattern.compile(fieldAnnotation.ignore());
         return !pattern.matcher(content).matches();
     }
 
     private List<T> lineToObjects(FixedFormatRecord fixedFormatRecord) {
-        T lineAsObject = this.lineToObject(fixedFormatRecord);
-        Method splitMethod = fixedFormatRecord.fixedFormatLine.splitAfterMethod;
-        if (splitMethod == null) {
-            return Collections.singletonList(lineAsObject);
-        }
-        int splitIndex;
         try {
-            splitIndex = (Integer) splitMethod.invoke(lineAsObject);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new FixedLengthException("Access to method failed", e);
+            T lineAsObject = this.lineToObject(fixedFormatRecord);
+            Method splitMethod = fixedFormatRecord.fixedFormatLine.splitAfterMethod;
+            if (splitMethod == null) {
+                return Collections.singletonList(lineAsObject);
+            }
+            int splitIndex;
+            try {
+                splitIndex = (Integer) splitMethod.invoke(lineAsObject);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new FixedLengthException("Access to method failed", e);
+            }
+            if (splitIndex <= 0 || splitIndex >= fixedFormatRecord.rawLine.length()) {
+                return Collections.singletonList(lineAsObject);
+            }
+            String subRawLine = fixedFormatRecord.rawLine.substring(splitIndex);
+            FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
+            if (subRecord == null) {
+                return Collections.singletonList(lineAsObject);
+            }
+            List<T> lineAsObjects = new ArrayList<>();
+            lineAsObjects.add(lineAsObject);
+            lineAsObjects.addAll(lineToObjects(subRecord));
+            return lineAsObjects;
+        } catch (Exception e) {
+            if (e instanceof FixedLengthException) {
+                throw e;
+            }
+            if (!skipErroneousLines) {
+                throw e;
+            }
+            LOGGER.warning("Skipping line with error");
+            return Collections.emptyList();
         }
-        if (splitIndex <= 0 || splitIndex >= fixedFormatRecord.rawLine.length()) {
-            return Collections.singletonList(lineAsObject);
-        }
-        String subRawLine = fixedFormatRecord.rawLine.substring(splitIndex);
-        FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
-        if (subRecord == null) {
-            return Collections.singletonList(lineAsObject);
-        }
-        List<T> lineAsObjects = new ArrayList<>();
-        lineAsObjects.add(lineAsObject);
-        lineAsObjects.addAll(lineToObjects(subRecord));
-        return lineAsObjects;
     }
 
     public List<T> parse(InputStream stream) throws FixedLengthException {
@@ -265,34 +307,34 @@ public class FixedLength<T> {
         for (T line : lines) {
 
             Arrays.stream(line.getClass().getDeclaredFields())
-                .filter(
-                    f ->
-                        f.getAnnotation(FixedField.class) != null
-                )
-                .sorted(Comparator.comparingInt(f -> f.getAnnotation(FixedField.class).offset()))
-                .forEach(f -> {
-                    FixedField fixedFieldAnnotation = f.getAnnotation(FixedField.class);
+                    .filter(
+                            f ->
+                                    f.getAnnotation(FixedField.class) != null
+                    )
+                    .sorted(Comparator.comparingInt(f -> f.getAnnotation(FixedField.class).offset()))
+                    .forEach(f -> {
+                        FixedField fixedFieldAnnotation = f.getAnnotation(FixedField.class);
 
-                    Formatter<T> formatter = (Formatter<T>) Formatter.instance(FORMATTERS, f.getType());
+                        Formatter<T> formatter = (Formatter<T>) Formatter.instance(FORMATTERS, f.getType());
 
-                    f.setAccessible(true);
+                        f.setAccessible(true);
 
-                    T value;
-                    try {
-                         value = (T) f.get(line);
-                    } catch (IllegalAccessException e) {
-                        throw new FixedLengthException(e.getMessage(), e);
-                    }
+                        T value;
+                        try {
+                            value = (T) f.get(line);
+                        } catch (IllegalAccessException e) {
+                            throw new FixedLengthException(e.getMessage(), e);
+                        }
 
-                    if (value != null) {
-                        builder.append(
-                                fixedFieldAnnotation.align().make(
-                                        formatter.asString(value, fixedFieldAnnotation),
-                                        fixedFieldAnnotation.length(),
-                                        fixedFieldAnnotation.padding())
-                        );
-                    }
-                });
+                        if (value != null) {
+                            builder.append(
+                                    fixedFieldAnnotation.align().make(
+                                            formatter.asString(value, fixedFieldAnnotation),
+                                            fixedFieldAnnotation.length(),
+                                            fixedFieldAnnotation.padding())
+                            );
+                        }
+                    });
 
             if (lines.size() != currentLine++) {
                 builder.append(this.delimiterString);
