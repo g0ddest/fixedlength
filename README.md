@@ -49,7 +49,7 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.8</version>
+  <version>0.9</version>
   <type>pom</type>
 </dependency>
 ```
@@ -61,7 +61,7 @@ implementation 'name.velikodniy.vitaliy:fixedlength:0.8'
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.8'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.9'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
