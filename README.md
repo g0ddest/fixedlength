@@ -1,7 +1,7 @@
  # Fixed Length handler for Java
  
 [![Maven Central](https://img.shields.io/maven-central/v/name.velikodniy.vitaliy/fixedlength)](https://search.maven.org/artifact/name.velikodniy.vitaliy/fixedlength)
-![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg?branch=master)
+![Gradle Build](https://github.com/g0ddest/fixedlength/workflows/Gradle%20Build/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=g0ddest_fixedlength&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=g0ddest_fixedlength)
 
 This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length (files with entities placed on fixed place in every line) files.
