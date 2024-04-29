@@ -47,6 +47,21 @@ class ParserTest {
 
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
+    void testParseInheritedOneLineType() throws FixedLengthException {
+        List<Row> parse = new FixedLength<Row>()
+                .registerLineType(InheritedEmployee.class)
+                .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
+
+        assertEquals(2, parse.size());
+        parse.forEach( e ->{
+            assertNotNull(((InheritedEmployee)e).firstName);
+            assertNotNull(((InheritedEmployee)e).lastName);
+        });
+    }
+
+    
+    @Test
+    @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineType() throws FixedLengthException {
         List<Row> parse = new FixedLength<Row>()
                 .registerLineType(Employee.class)
