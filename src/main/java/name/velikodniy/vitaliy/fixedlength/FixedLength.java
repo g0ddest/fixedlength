@@ -53,7 +53,7 @@ public class FixedLength<T> {
         if (annotation != null) {
             fixedFormatLine.startsWith = annotation.startsWith();
         }
-        for (Field field : clazz.getDeclaredFields()) {
+        for (Field field : getAllFields(clazz)) {
             FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
             if (fieldAnnotation == null) {
                 continue;
@@ -69,6 +69,17 @@ public class FixedLength<T> {
             fixedFormatLine.splitAfterMethod = method;
         }
         return fixedFormatLine;
+    }
+
+    List<Field> getAllFields(final Class<?> clazz) {
+        if (clazz == null) {
+            return Collections.emptyList();
+        }
+
+        List<Field> result = new ArrayList<>(getAllFields(clazz.getSuperclass()));
+        List<Field> filteredFields = Arrays.stream(clazz.getDeclaredFields()).collect(Collectors.toList());
+        result.addAll(filteredFields);
+        return result;
     }
 
     public FixedLength<T> registerLineType(final Class<? extends T> lineClass) {
@@ -306,7 +317,8 @@ public class FixedLength<T> {
 
         for (T line : lines) {
 
-            Arrays.stream(line.getClass().getDeclaredFields())
+            getAllFields(line.getClass())
+                    .stream()
                     .filter(
                             f ->
                                     f.getAnnotation(FixedField.class) != null

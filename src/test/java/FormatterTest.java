@@ -27,4 +27,19 @@ class FormatterTest {
 
     }
 
+    
+    @Test
+    @DisplayName("Simple string format class hierarchy")
+    void simpleFormatInherited() {
+
+        FixedLength<Row> impl = new FixedLength<Row>()
+                .registerLineType(InheritedEmployee.class);
+
+        List<Row> parse = impl
+                .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
+
+        assertEquals(singleTypeExample, impl.format(parse));
+
+    }
+    
 }
