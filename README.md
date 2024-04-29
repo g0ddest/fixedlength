@@ -49,19 +49,19 @@ Maven:
 <dependency>
   <groupId>name.velikodniy.vitaliy</groupId>
   <artifactId>fixedlength</artifactId>
-  <version>0.9</version>
+  <version>0.10</version>
   <type>pom</type>
 </dependency>
 ```
 
 Gradle:
 ```groovy
-implementation 'name.velikodniy.vitaliy:fixedlength:0.8'
+implementation 'name.velikodniy.vitaliy:fixedlength:0.10'
 ```
 
 Ivy:
 ```xml
-<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.9'>
+<dependency org='name.velikodniy.vitaliy' name='fixedlength' rev='0.10'>
   <artifact name='fixedlength' ext='pom' ></artifact>
 </dependency>
 ```
@@ -87,7 +87,7 @@ Joe1      Smith
 Joe3      Smith     
 ```
 
-you need just write down this class:
+you need just write down this class (annotated fields also could be pulled from annotated classes):
 
 ```java
 public class Employee {
