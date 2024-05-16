@@ -5,7 +5,9 @@ import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
 import name.velikodniy.vitaliy.fixedlength.annotation.SplitLineAfter;
 import name.velikodniy.vitaliy.fixedlength.formatters.Formatter;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -290,21 +292,34 @@ public class FixedLength<T> {
         return this.parseAsStream(stream).collect(Collectors.toList());
     }
 
+    public List<T> parse(Reader reader) throws FixedLengthException {
+        return parseAsStream(reader).collect(Collectors.toList());
+    }
+
     public Stream<T> parseAsStream(InputStream inputStream)
             throws FixedLengthException {
+        Stream<String> lines = StreamSupport.stream(
+                        Spliterators.spliterator(
+                                new Scanner(inputStream, this.charset.name()).useDelimiter(this.delimiter),
+                                Long.MAX_VALUE,
+                                Spliterator.ORDERED | Spliterator.NONNULL
+                        ), false);
+
+        return parseAsStream(lines);
+    }
+
+    public Stream<T> parseAsStream(Reader reader) throws FixedLengthException {
+        return parseAsStream(new BufferedReader(reader).lines());
+    }
+
+    private Stream<T> parseAsStream(Stream<String> lines) throws FixedLengthException {
         if (lineTypes.isEmpty()) {
             throw new FixedLengthException(
                     "Specify at least one line type"
             );
         }
 
-        return StreamSupport.stream(
-                        Spliterators.spliterator(
-                                new Scanner(inputStream, this.charset.name()).useDelimiter(this.delimiter),
-                                Long.MAX_VALUE,
-                                Spliterator.ORDERED | Spliterator.NONNULL
-                        ), false)
-                .map(this::fixedFormatLine)
+        return lines.map(this::fixedFormatLine)
                 .filter(Objects::nonNull)
                 .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
     }
