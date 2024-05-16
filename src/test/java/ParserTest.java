@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -58,7 +59,6 @@ class ParserTest {
             assertNotNull(((InheritedEmployee)e).lastName);
         });
     }
-
     
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
@@ -177,5 +177,15 @@ class ParserTest {
                 .parse(new ByteArrayInputStream(mixedTypesCustomDelimiter.getBytes()));
 
         assertEquals(3, parse.size());
+    }
+
+    @Test
+    @DisplayName("Parse as reader with default charset and one line type")
+    void testParseReaderWithDefaultCharset() throws FixedLengthException {
+        List<Row> parse = new FixedLength<Row>()
+                .registerLineType(Employee.class)
+                .parse(new StringReader(singleTypeExample));
+
+        assertEquals(2, parse.size());
     }
 }
