@@ -1,5 +1,5 @@
-import name.velikodniy.vitaliy.fixedlength.FixedLength;
-import name.velikodniy.vitaliy.fixedlength.FixedLengthException;
+package name.velikodniy.vitaliy.fixedlength;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,10 @@ import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ParserTest {
 
@@ -38,13 +41,17 @@ class ParserTest {
 
     String mixedTypesWrongSplitRecordExample =
             "HEADERMy Title  00        EmplJoe1      Smith     Developer 07500010012009\n" +
-                    "CatSnowball  20200103\n" +
-                    "EmplJoe3      Smith     Developer ";
+            "CatSnowball  20200103\n" +
+            "EmplJoe3      Smith     Developer ";
 
     String mixedTypesCustomDelimiter =
             "EmplJoe1      Smith     Developer 07500010012009@" +
             "CatSnowball  20200103@" +
             "EmplJoe3      Smith     Developer ";
+
+    String mixedTypesCustomExample =
+            "EmplJoe1      Smith     Developer 07500010012009\n" +
+            "Engineer      POSITION";
 
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
@@ -54,12 +61,12 @@ class ParserTest {
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
         assertEquals(2, parse.size());
-        parse.forEach( e ->{
-            assertNotNull(((InheritedEmployee)e).firstName);
-            assertNotNull(((InheritedEmployee)e).lastName);
+        parse.forEach(e -> {
+            assertNotNull(((InheritedEmployee) e).firstName);
+            assertNotNull(((InheritedEmployee) e).lastName);
         });
     }
-    
+
     @Test
     @DisplayName("Parse as input stream with default charset and one line type")
     void testParseOneLineType() throws FixedLengthException {
@@ -71,12 +78,22 @@ class ParserTest {
     }
 
     @Test
+    @DisplayName("Parse as input stream with default charset and one line type and empty annotation")
+    void testParseOneLineTypeEmptyAnnotation() throws FixedLengthException {
+        List<Row> parse = new FixedLength<Row>()
+                .registerLineType(EmployeeWithEmptyAnnotation.class)
+                .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
+
+        assertEquals(2, parse.size());
+    }
+
+    @Test
     @DisplayName("Parse as input stream with throwing exception when format erroneous fields")
     void testParseThrowsExceptionOnInvalidFormat() throws FixedLengthException {
         assertThrows(DateTimeParseException.class, () ->
                 new FixedLength<Row>()
-                    .registerLineType(Employee.class)
-                    .parse(new ByteArrayInputStream(singleTypeWithErrorExample.getBytes())));
+                        .registerLineType(Employee.class)
+                        .parse(new ByteArrayInputStream(singleTypeWithErrorExample.getBytes())));
     }
 
     @Test
@@ -185,6 +202,17 @@ class ParserTest {
         List<Row> parse = new FixedLength<Row>()
                 .registerLineType(Employee.class)
                 .parse(new StringReader(singleTypeExample));
+
+        assertEquals(2, parse.size());
+    }
+
+    @Test
+    @DisplayName("Parse as input stream with default charset and mixed line type and custom predicate")
+    void testParseMixedLineTypeCustomPredicate() throws FixedLengthException {
+        List<Object> parse = new FixedLength<>()
+                .registerLineType(EmployeeMixed.class)
+                .registerLineType(EmployeePosition.class)
+                .parse(new ByteArrayInputStream(mixedTypesCustomExample.getBytes()));
 
         assertEquals(2, parse.size());
     }

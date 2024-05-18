@@ -1,3 +1,5 @@
+package name.velikodniy.vitaliy.fixedlength;
+
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 import name.velikodniy.vitaliy.fixedlength.annotation.FixedLine;
 import name.velikodniy.vitaliy.fixedlength.annotation.SplitLineAfter;
