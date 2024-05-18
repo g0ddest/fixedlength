@@ -1,4 +1,5 @@
-import name.velikodniy.vitaliy.fixedlength.FixedLength;
+package name.velikodniy.vitaliy.fixedlength;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

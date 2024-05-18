@@ -123,7 +123,7 @@ CatSnowball
 EmplJoe3      Smith     
 ```
 
-with this files:
+with these files:
 
 ```java
 @FixedLine(startsWith = "Empl")
@@ -136,6 +136,8 @@ public class EmployeeMixed {
     public String lastName;
 }
 ```
+
+(fields could be final as well).
 
 ```java
 @FixedLine(startsWith = "Cat")
@@ -230,6 +232,16 @@ public class HeaderSplit {
     }
 }
 ```
+
+## Custom rules for mixed lines
+
+There is a `startsWith` parameter for easy-to-use identifying the class to deserialize, but sometimes it is not enough. So there is a `predicate` parameter in `FixedLine` annotation where you should pass your own custom rule as predicate. Just implement `Predicate<String>` and pass pointer to class in annotation.
+
+```java
+@FixedLine(predicate = EmployeePositionPredicate.class)
+```
+
+This class will be initialized just once and cached. 
 
 ## Benchmark
 

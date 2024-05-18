@@ -17,12 +17,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,6 +43,7 @@ public class FixedLength<T> {
             Class<? extends Formatter<? extends Serializable>>
             > FORMATTERS
             = Formatter.getDefaultFormatters();
+    private final Map<Class<? extends Predicate<String>>, Predicate<String>> predicates = new HashMap<>();
     private final List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
     private boolean skipUnknownLines = true;
     private boolean skipErroneousFields = false;
@@ -53,7 +57,8 @@ public class FixedLength<T> {
         fixedFormatLine.clazz = clazz;
         FixedLine annotation = clazz.getDeclaredAnnotation(FixedLine.class);
         if (annotation != null) {
-            fixedFormatLine.startsWith = annotation.startsWith();
+            fixedFormatLine.setStartsWith(annotation.startsWith());
+            fixedFormatLine.predicate = annotation.predicate();
         }
         for (Field field : getAllFields(clazz)) {
             FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
@@ -150,21 +155,33 @@ public class FixedLength<T> {
         return this;
     }
 
-    private FixedFormatRecord fixedFormatLine(String line) {
-        if (lineTypes.size() == 1) {
-            if (lineTypes.get(0).startsWith == null) {
-                return new FixedFormatRecord(line, lineTypes.get(0));
-            } else if (line.startsWith(lineTypes.get(0).startsWith)) {
-                return new FixedFormatRecord(line, lineTypes.get(0));
-            } else {
-                return null;
+    private Predicate<String> getPredicate(Class<? extends Predicate<String>> clazz) {
+        if (predicates.containsKey(clazz)) {
+            return predicates.get(clazz);
+        } else {
+            Predicate<String> predicate;
+            try {
+                predicate = clazz.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                     | NoSuchMethodException e) {
+                throw new FixedLengthException("Cannot init predicate, it should have empty constructor", e);
             }
+            predicates.put(clazz, predicate);
+            return predicate;
         }
+    }
+
+    private FixedFormatRecord fixedFormatLine(String line) {
         for (FixedFormatLine<? extends T> lineType : lineTypes) {
             if (
-                    lineType.startsWith != null
-                            &&
-                            line.startsWith(lineType.startsWith)
+                    lineType.getStartsWith()
+                            .map(line::startsWith)
+                            .orElse(true)
+                    &&
+                    lineType.getPredicate()
+                            .map(this::getPredicate)
+                            .map(p -> p.test(line))
+                            .orElse(true)
             ) {
                 return new FixedFormatRecord(line, lineType);
             }
@@ -386,16 +403,25 @@ public class FixedLength<T> {
 
     private static class FixedFormatLine<T> {
         private String startsWith = null;
+        private Class<? extends Predicate<String>> predicate;
         private Class<? extends T> clazz;
         private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
         private Method splitAfterMethod;
 
-        public String getStartsWith() {
-            return startsWith;
+        public Optional<String> getStartsWith() {
+            return Optional.ofNullable(startsWith).flatMap(s -> s.isEmpty() ? Optional.empty() : Optional.of(s));
+        }
+
+        public Optional<Class<? extends Predicate<String>>> getPredicate() {
+            return Optional.ofNullable(predicate);
         }
 
         public void setStartsWith(String startsWith) {
             this.startsWith = startsWith;
+        }
+
+        public void setPredicate(Class<? extends Predicate<String>> predicate) {
+            this.predicate = predicate;
         }
 
         public Class<? extends T> getClazz() {
