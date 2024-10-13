@@ -245,11 +245,13 @@ public class FixedLength<T> {
     private T lineToObject(FixedFormatRecord fixedFormatRecord) {
         Class<? extends T> clazz = fixedFormatRecord.fixedFormatLine.clazz;
         String line = fixedFormatRecord.rawLine;
-        T lineAsObject;
+        T lineAsObject = null;
+        boolean useEmptyConstructor = true;
         try {
             lineAsObject = clazz.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException e) {
-            throw new FixedLengthException("No empty constructor in class", e);
+            LOGGER.fine("No empty constructor in class");
+            useEmptyConstructor = false;
         } catch (IllegalAccessException
                  | InstantiationException
                  | InvocationTargetException e) {
@@ -258,6 +260,8 @@ public class FixedLength<T> {
             );
         }
 
+        Object[] args = new Object[fixedFormatRecord.fixedFormatLine.fixedFormatFields.size()];
+        int index = 0;
         for (FixedFormatField fixedFormatField : fixedFormatRecord.fixedFormatLine.fixedFormatFields) {
             FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
             Field field = fixedFormatField.getField();
@@ -271,7 +275,23 @@ public class FixedLength<T> {
                     endOfFieldIndex
             ), fieldAnnotation.padding());
             if (acceptFieldContent(str, fieldAnnotation)) {
-                fillField(field, lineAsObject, str, fieldAnnotation);
+                if (useEmptyConstructor) {
+                    fillField(field, lineAsObject, str, fieldAnnotation);
+                } else {
+                    args[index++] = Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation);
+                }
+            }
+        }
+        if (!useEmptyConstructor) {
+            try {
+                if (clazz.getDeclaredConstructors().length != 1) {
+                    throw new FixedLengthException("There should be only one matching constructor");
+                }
+                lineAsObject = (T) clazz.getDeclaredConstructors()[0].newInstance(args);
+            } catch (IllegalAccessException
+                     | InstantiationException
+                     | InvocationTargetException e) {
+                throw new FixedLengthException("Unable to instantiate " + clazz.getName(), e);
             }
         }
         return lineAsObject;

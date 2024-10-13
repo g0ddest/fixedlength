@@ -243,6 +243,24 @@ There is a `startsWith` parameter for easy-to-use identifying the class to deser
 
 This class will be initialized just once and cached. 
 
+## Java records support
+
+There is an experimental support of Java 14+ records with no breaking of Java 8 support.
+
+Just annotate record's constructor as follows:
+
+```java
+record Employee (
+    @FixedField(offset = 1, length = 10, align = Align.LEFT)
+    String firstName,
+
+    @FixedField(offset = 10, length = 10, align = Align.LEFT)
+    String lastName
+){}
+```
+
+and it works the same way as annotated class.
+
 ## Benchmark
 
 There is a benchmark, you can run it with `gradle jmh` command. Also, you can change running parameters of it in file `src/jmh/java/name/velikodniy/vitaliy/fixedlength/benchmark/BenchmarkRunner.java`. 

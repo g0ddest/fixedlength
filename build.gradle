@@ -16,7 +16,7 @@ plugins {
 }
 
 group 'name.velikodniy.vitaliy'
-version '0.11'
+version '0.12'
 
 repositories {
     mavenLocal()
