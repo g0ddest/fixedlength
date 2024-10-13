@@ -57,4 +57,12 @@ public @interface FixedField {
      * @return pattern matching content to ignore
      */
     String ignore() default "";
+
+    /**
+     * Allows empty string as value, by default it is false.
+     * If true - values will be kept as is
+     * If false - value will be null
+     * @return allows empty string as value boolean
+     */
+    boolean allowEmptyStrings() default false;
 }

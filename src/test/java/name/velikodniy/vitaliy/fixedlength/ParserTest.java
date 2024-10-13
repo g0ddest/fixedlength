@@ -230,4 +230,16 @@ class ParserTest {
 
         assertEquals(2, parse.size());
     }
+
+    @Test
+    @DisplayName("Parse object with whitespaces preventing it to cast as null")
+    void testParseWhitespaceNonNull() throws FixedLengthException {
+
+        List<StringHolder> holders = new FixedLength<StringHolder>()
+                .registerLineType(StringHolder.class)
+                .parse(new ByteArrayInputStream("   some text to drop".getBytes()));
+
+        assertEquals(1, holders.size());
+        assertEquals("   ", holders.get(0).value);
+    }
 }
