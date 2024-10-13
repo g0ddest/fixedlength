@@ -326,7 +326,7 @@ public class FixedLength<T> {
         if (content == null) {
             return false;
         }
-        if (content.trim().isEmpty()) {
+        if (content.trim().isEmpty() && !fieldAnnotation.allowEmptyStrings()) {
             return false;
         }
         if (fieldAnnotation.ignore().isEmpty()) {
