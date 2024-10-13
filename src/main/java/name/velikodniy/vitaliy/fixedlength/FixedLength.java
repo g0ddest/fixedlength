@@ -34,6 +34,10 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Class for fixed line processing and registering classes to process.
+ * @param <T>
+ */
 public class FixedLength<T> {
 
     private static final Logger LOGGER = Logger.getLogger(FixedLength.class.getName());
@@ -89,6 +93,12 @@ public class FixedLength<T> {
         return result;
     }
 
+    /**
+     * Register here type that will be processed in serialization, or deserialization process.
+     * Could be called more than once.
+     * @param lineClass class for entity to be registered
+     * @return instance of FixedLength
+     */
     public FixedLength<T> registerLineType(final Class<? extends T> lineClass) {
         lineTypes.add(classToLineDesc(lineClass));
         return this;
@@ -108,21 +118,39 @@ public class FixedLength<T> {
         return this;
     }
 
+    /**
+     * In case of unknown line, the one will be skipped with no exception thrown
+     * @return instance of FixedLength
+     */
     public FixedLength<T> stopSkipUnknownLines() {
         skipUnknownLines = false;
         return this;
     }
 
+    /**
+     * In case of error field in parsing the line, the one will be skipped with no exception thrown
+     * @return instance of FixedLength
+     */
     public FixedLength<T> skipErroneousFields() {
         skipErroneousFields = true;
         return this;
     }
 
+    /**
+     * In case of error line while parsing, the one will be skipped with no exception thrown
+     * @return instance of FixedLength
+     */
     public FixedLength<T> skipErroneousLines() {
         skipErroneousLines = true;
         return this;
     }
 
+    /**
+     * In case you have a mixed fixed length file with different types in it,
+     * you could register more than one line type in array instead of calling registerLineType multiple times.
+     * @param lineClasses class for entity to be registered
+     * @return instance of FixedLength
+     */
     public FixedLength<T> registerLineTypes(final List<Class<T>> lineClasses) {
         lineTypes.addAll(
                 lineClasses.stream()
@@ -132,21 +160,43 @@ public class FixedLength<T> {
         return this;
     }
 
+    /**
+     * In case you have a mixed fixed length file with different types in it,
+     * you could register more than one line type in array instead of calling registerLineType multiple times.
+     * @param lineClasses class for entity to be registered
+     * @return instance of FixedLength
+     */
     public FixedLength<T> registerLineTypes(final Class<T>[] lineClasses) {
         registerLineTypes(Arrays.asList(lineClasses));
         return this;
     }
 
+    /**
+     * Specifies charset of a file, in case of no provided Charset.defaultCharset() will be used
+     * @param charset Charset of current file
+     * @return instance of FixedLength
+     */
     public FixedLength<T> usingCharset(Charset charset) {
         this.charset = requireNonNull(charset, "Charset can't be null");
         return this;
     }
 
+    /**
+     * Delimiter between fixed line entity records could be specified as a regexp pattern.
+     * By default, it is linefeed LF \n
+     * @param pattern regexp pattern how to break lines
+     * @return instance of FixedLength
+     */
     public FixedLength<T> usingLineDelimiter(Pattern pattern) {
         this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be null");
         return this;
     }
 
+    /**
+     * Delimiter between fixed line entity records. By default, it is linefeed LF \n (\u000a)
+     * @param delimiterString string that points the end of a line
+     * @return instance of FixedLength
+     */
     public FixedLength<T> usingLineDelimiter(String delimiterString) {
         this.delimiterString = requireNonNull(
                 delimiterString,
@@ -305,14 +355,32 @@ public class FixedLength<T> {
         }
     }
 
+    /**
+     * Parses a fixed length file into a List
+     * @param stream InputStream of a fixed length file
+     * @return List of parsed objects
+     * @throws FixedLengthException in case of parsing errors
+     */
     public List<T> parse(InputStream stream) throws FixedLengthException {
         return this.parseAsStream(stream).collect(Collectors.toList());
     }
 
+    /**
+     * Parses a fixed length file into a List
+     * @param reader Reader of a fixed length file
+     * @return List of parsed objects
+     * @throws FixedLengthException in case of parsing errors
+     */
     public List<T> parse(Reader reader) throws FixedLengthException {
         return parseAsStream(reader).collect(Collectors.toList());
     }
 
+    /**
+     * Parses a fixed length file into a stream
+     * @param inputStream InputStream of a fixed length file
+     * @return Stream of parsed objects
+     * @throws FixedLengthException in case of parsing errors
+     */
     public Stream<T> parseAsStream(InputStream inputStream)
             throws FixedLengthException {
         Stream<String> lines = StreamSupport.stream(
@@ -325,6 +393,12 @@ public class FixedLength<T> {
         return parseAsStream(lines);
     }
 
+    /**
+     * Parses a fixed length file into a stream
+     * @param reader Reader of a fixed length file
+     * @return Stream of parsed objects
+     * @throws FixedLengthException in case of parsing errors
+     */
     public Stream<T> parseAsStream(Reader reader) throws FixedLengthException {
         return parseAsStream(new BufferedReader(reader).lines());
     }
@@ -341,6 +415,11 @@ public class FixedLength<T> {
                 .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
     }
 
+    /**
+     * Builds a fixed length String
+     * @param lines lines to be serialized
+     * @return String of a fixed length format
+     */
     public String format(List<T> lines) {
 
         final StringBuilder builder = new StringBuilder();
