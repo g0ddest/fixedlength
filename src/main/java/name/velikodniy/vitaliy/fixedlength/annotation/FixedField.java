@@ -11,6 +11,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target(ElementType.FIELD)
 public @interface FixedField {
+    /**
+     * Offset of the field
+     * @return offset of the field
+     */
     int offset();
 
     /**
@@ -21,14 +25,14 @@ public @interface FixedField {
     int length();
 
     /**
-     * Align of fixed format field
+     * Align of fixed format field, default is RIGHT
      *
      * @return align of fixed format field
      */
     Align align() default Align.RIGHT;
 
     /**
-     * Padding chars that will be trimmed. It depends on align.
+     * Padding chars that will be trimmed. It depends on align. By default, it is whitespace.
      *
      * @return padding chars that will be trimmed
      */

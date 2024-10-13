@@ -2,6 +2,9 @@ package name.velikodniy.vitaliy.fixedlength;
 
 import java.util.Arrays;
 
+/**
+ * Alignment of value in a field.
+ */
 public enum Align {
     RIGHT {
         public String make(String data, int length, char paddingChar) {
@@ -105,7 +108,7 @@ public enum Align {
         if (str == null) {
             return null;
         }
-        if (padStr == null || padStr.length() == 0) {
+        if (padStr == null || padStr.isEmpty()) {
             padStr = " ";
         }
         final int padLen = padStr.length();
@@ -150,7 +153,7 @@ public enum Align {
         if (str == null) {
             return null;
         }
-        if (padStr == null || padStr.length() == 0) {
+        if (padStr == null || padStr.isEmpty()) {
             padStr = " ";
         }
         final int padLen = padStr.length();
