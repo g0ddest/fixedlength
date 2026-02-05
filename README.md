@@ -183,6 +183,8 @@ There are all fields in `FixedField` annotation:
 * `format` — parameters that goes to formatter. For example, it can be date format.
 * `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
 * `ignore` — the parser will ignore the field content if it matches the given regular expression. For example, `"0{8}"` will ignore `"00000000"`
+* `allowEmptyStrings` — the parser will keep empty strings instead of replacing them with `null`
+* `fallbackStringForNullValue` — when formatting an object back to a fixed length string, the formatter will replace a `null` value for this field with the given fallback string
 
 ### Generics support
 

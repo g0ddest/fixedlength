@@ -65,4 +65,11 @@ public @interface FixedField {
      * @return allows empty string as value boolean
      */
     boolean allowEmptyStrings() default false;
+
+    /**
+     * Value to use as fallback during formatting, if the field content is null.
+     * If this is not set and the field value is null, the field will be skipped completely during formatting.
+     * @return value to use for formatting in case the field value is null
+     */
+    String fallbackStringForNullValue() default "";
 }

@@ -476,6 +476,8 @@ public class FixedLength<T> {
                                             fixedFieldAnnotation.length(),
                                             fixedFieldAnnotation.padding())
                             );
+                        } else {
+                            builder.append(fixedFieldAnnotation.fallbackStringForNullValue());
                         }
                     });
 
