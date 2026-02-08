@@ -14,6 +14,12 @@ class FormatterTest {
             "Joe1      Smith     Developer 07500010012009\n" +
             "Joe3      Smith     Developer ";
 
+    String singleTypeExampleWithNullValues =
+            "Joe1                Developer  7500010012009\n" +
+            "Joe3      Smith                 950012122008\n" +
+            "Joe4                               000000000\n" +
+            "          Smith     Developer  6500010012009";
+
     @Test
     @DisplayName("Simple string format")
     void simpleFormat() {
@@ -28,7 +34,6 @@ class FormatterTest {
 
     }
 
-    
     @Test
     @DisplayName("Simple string format class hierarchy")
     void simpleFormatInherited() {
@@ -40,6 +45,20 @@ class FormatterTest {
                 .parse(new ByteArrayInputStream(singleTypeExample.getBytes()));
 
         assertEquals(singleTypeExample, impl.format(parse));
+
+    }
+
+    @Test
+    @DisplayName("Simple string format with null values")
+    void simpleFormatWithNullValues() {
+
+        FixedLength<Row> impl = new FixedLength<Row>()
+                .registerLineType(EmployeeWithFallbackStrings.class);
+
+        List<Row> parse = impl
+                .parse(new ByteArrayInputStream(singleTypeExampleWithNullValues.getBytes()));
+
+        assertEquals(singleTypeExampleWithNullValues, impl.format(parse));
 
     }
     

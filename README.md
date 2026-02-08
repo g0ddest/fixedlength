@@ -68,7 +68,7 @@ Ivy:
 ```
 
 ## Usage
-
+### Basic usage
 For example, you can transform this lines to 2 different kind of objects:
 
 ```
@@ -108,6 +108,7 @@ List<Object> parse = new FixedLength()
     .parse(fileStream);
 ```
 
+### Mixed line types
 If there are few line types in your file and they starts with different string you can register different line types.
 
 To do this you should add annotation to your class:
@@ -162,6 +163,7 @@ List<Object> parse = new FixedLength()
     .parse(fileStream);
 ```
 
+### Custom formatters
 If you need to use a custom class or type in parser you can add your own formatter like this:
 
 ```java
@@ -175,6 +177,7 @@ public class StringFormatter extends Formatter<String> {
 
 and register it with `registerFormatter` method on `FixedLength` instance.
 
+### Annotation parameters
 There are all fields in `FixedField` annotation:
 * `offset` —  position on which this fields starts. Line starts with offset 1.
 * `length` — length of the field
@@ -184,7 +187,7 @@ There are all fields in `FixedField` annotation:
 * `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
 * `ignore` — the parser will ignore the field content if it matches the given regular expression. For example, `"0{8}"` will ignore `"00000000"`
 * `allowEmptyStrings` — the parser will keep empty strings instead of replacing them with `null`
-* `fallbackStringForNullValue` — when formatting an object back to a fixed length string, the formatter will replace a `null` value for this field with the given fallback string
+* `fallbackStringForNullValue` — when formatting an object back to a fixed length string, the formatter will replace a `null` value for this field with the given fallback string. If the fallback string is shorter than the field length, it will be padded according to the specified alignment and padding character.
 
 ### Generics support
 
@@ -207,7 +210,7 @@ In both cases warnings will be raised in logs.
 
 By default, exception will be raised for entire process.
 
-### Cases to use
+### Splitting lines
 
 In the case if you have 2 different records in one line and there is a split index you can add a method in your entity that should return index of the next record and mark it with annotation `SplitLineAfter`.
 
@@ -236,7 +239,7 @@ public class HeaderSplit {
 }
 ```
 
-## Custom rules for mixed lines
+### Custom rules for mixed lines
 
 There is a `startsWith` parameter for easy-to-use identifying the class to deserialize, but sometimes it is not enough. So there is a `predicate` parameter in `FixedLine` annotation where you should pass your own custom rule as predicate. Just implement `Predicate<String>` and pass pointer to class in annotation.
 
@@ -245,6 +248,60 @@ There is a `startsWith` parameter for easy-to-use identifying the class to deser
 ```
 
 This class will be initialized just once and cached. 
+
+### Handling empty fields during formatting
+
+When formatting an object back to a fixed length string, you can control how empty (null) fields are handled using the `fallbackStringForNullValue` parameter in the `FixedField` annotation. If a field's value is `null`, the formatter will replace it with the specified fallback string. If the fallback string is shorter than the defined field length, it will be padded according to the specified alignment and padding character.
+
+Let's say we have a class defined as follows:
+```java
+public class Employee {
+    @FixedField(offset = 1, length = 10, align = Align.LEFT)
+    public String firstName;
+
+    @FixedField(offset = 10, length = 10, align = Align.LEFT)
+    public String lastName;
+
+    @FixedField(offset = 20, length = 10, align = Align.LEFT)
+    public String role;
+
+    @FixedField(offset = 20, length = 10, align = Align.LEFT, ignore = "0{8}")
+    public LocalDate joinDate;
+}
+```
+
+When parsing the following lines, there will be two `null` values for the 2nd line: `lastName` and `joinDate`:
+```
+Joe1      Smith     Developer 12122009
+Joe3                Tester    00000000
+```
+
+However, when formatting the resulting object back to a fixed length string, the `null` values for these columns would not be included, leading to a string like this:
+```
+Joe3      Tester
+```
+
+As this is most likely not what we want, we can specify a fallback string for each of the columns as follows:
+```java
+public class Employee {
+    @FixedField(offset = 1, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    public String firstName;
+
+    @FixedField(offset = 10, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    public String lastName;
+
+    @FixedField(offset = 20, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    public String role;
+
+    @FixedField(offset = 20, length = 10, align = Align.LEFT, ignore = "0{8}", fallbackStringForNullValue = "00000000")
+    public LocalDate joinDate;
+}
+```
+
+When formatting the object back into a fixed length string, the resulting string will not look as expected (note how the fallback-strings will be auto-padded, if needed):
+```
+Joe3                Tester    00000000
+```
 
 ## Java records support
 
