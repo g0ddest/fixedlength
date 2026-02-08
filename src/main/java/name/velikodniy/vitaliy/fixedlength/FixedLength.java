@@ -476,8 +476,19 @@ public class FixedLength<T> {
                                             fixedFieldAnnotation.length(),
                                             fixedFieldAnnotation.padding())
                             );
-                        } else {
-                            builder.append(fixedFieldAnnotation.fallbackStringForNullValue());
+                        } else if (!fixedFieldAnnotation.fallbackStringForNullValue().isEmpty()) {
+                            if (fixedFieldAnnotation.fallbackStringForNullValue().length() > fixedFieldAnnotation.length()) {
+                                throw new FixedLengthException(String.format(
+                                        "Fallback string for null value is too long for field %s in class %s. Please check the annotation parameters.",
+                                        f.getName(), line.getClass().getName()
+                                ));
+                            }
+                            String paddedFallbackString = fixedFieldAnnotation.align().make(
+                                    fixedFieldAnnotation.fallbackStringForNullValue(),
+                                    fixedFieldAnnotation.length(),
+                                    fixedFieldAnnotation.padding()
+                            );
+                            builder.append(paddedFallbackString);
                         }
                     });
 
