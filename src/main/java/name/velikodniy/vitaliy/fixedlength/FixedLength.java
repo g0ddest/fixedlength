@@ -477,9 +477,11 @@ public class FixedLength<T> {
                                             fixedFieldAnnotation.padding())
                             );
                         } else if (!fixedFieldAnnotation.fallbackStringForNullValue().isEmpty()) {
-                            if (fixedFieldAnnotation.fallbackStringForNullValue().length() > fixedFieldAnnotation.length()) {
+                            if (fixedFieldAnnotation.fallbackStringForNullValue().length()
+                                    > fixedFieldAnnotation.length()) {
                                 throw new FixedLengthException(String.format(
-                                        "Fallback string for null value is too long for field %s in class %s. Please check the annotation parameters.",
+                                        "Fallback string for null value is too long for field %s in class %s. "
+                                                + "Please check the annotation parameters.",
                                         f.getName(), line.getClass().getName()
                                 ));
                             }
