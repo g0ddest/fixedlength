@@ -2,17 +2,37 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        if (JavaVersion.current() >= JavaVersion.VERSION_11) {
+            classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882"
+        }
     }
 }
 
 plugins {
-    id 'maven'
     id 'maven-publish'
     id 'java'
     id 'checkstyle'
     id 'me.champeau.jmh' version '0.6.6'
     id 'signing'
     id 'jacoco'
+}
+
+if (JavaVersion.current() >= JavaVersion.VERSION_11) {
+    apply plugin: "org.sonarqube"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 group 'name.velikodniy.vitaliy'
@@ -33,14 +53,14 @@ test {
     useJUnitPlatform()
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
 javadoc.failOnError = false
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -53,13 +73,6 @@ checkstyle {
     checkstyleMain.exclude '**/jmh/**'
 }
 
-
-signing {
-    def signingKey = System.getenv('SIGNING_KEY')
-    def signingPassword = System.getenv('SIGNING_PASSWORD')
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign configurations.archives
-}
 
 // Github publishing
 publishing {
@@ -76,28 +89,12 @@ publishing {
     publications {
         gpr(MavenPublication) {
             from(components.java)
-        }
-    }
-}
+            artifact sourcesJar
+            artifact javadocJar
 
-// Maven Central publish
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_PASSWORD"))
-            }
-
-            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_PASSWORD"))
-            }
-
-            pom.project {
-
+            pom {
                 name = 'fixedlength'
-                packaging 'jar'
+                packaging = 'jar'
                 description = 'Fast simple zero-dependency Java library to parse fixed length files'
                 url = 'https://github.com/g0ddest/fixedlength'
                 licenses {
@@ -116,15 +113,33 @@ uploadArchives {
                 scm {
                     connection = 'scm:git:https://github.com/g0ddest/fixedlength.git'
                     developerConnection = 'scm:git:ssh://git@github.com:g0ddest/fixedlength.git'
-                    url = "https://github.com/g0ddest/fixedlength.git"
+                    url = 'https://github.com/g0ddest/fixedlength.git'
                 }
             }
         }
     }
 }
 
+signing {
+    def signingKey = System.getenv('SIGNING_KEY')
+    def signingPassword = System.getenv('SIGNING_PASSWORD')
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications
+}
+
 jacocoTestReport {
     reports {
-        xml.enabled true
+        xml.required = true
+    }
+}
+
+if (JavaVersion.current() >= JavaVersion.VERSION_11) {
+    sonar {
+        properties {
+            property "sonar.projectKey", "g0ddest_fixedlength"
+            property "sonar.organization", "g0ddest"
+            property "sonar.host.url", "https://sonarcloud.io"
+            property "sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml"
+        }
     }
 }
