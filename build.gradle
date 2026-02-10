@@ -74,7 +74,7 @@ checkstyle {
 }
 
 
-// Github publishing
+// Publishing
 publishing {
     repositories {
         maven {
@@ -83,6 +83,14 @@ publishing {
             credentials {
                 username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
                 password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+        maven {
+            name = "MavenCentral"
+            url = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+            credentials {
+                username = System.getenv("CENTRAL_TOKEN_USERNAME")
+                password = System.getenv("CENTRAL_TOKEN_PASSWORD")
             }
         }
     }

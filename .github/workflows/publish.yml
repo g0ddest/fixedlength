@@ -1,9 +1,11 @@
 name: Gradle Build
 
 on:
-  release:
-    types:
-      - created
+#  release:
+#    types:
+#      - created
+  push:
+    branches: [ master ]
 
 jobs:
   build:
@@ -30,3 +32,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      - name: Deploy to Maven Central (upload)
+        run: ./gradlew publishGprPublicationToMavenCentralRepository
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      - name: Finalize Maven Central deployment
+        run: |
+          curl -f --retry 3 -X POST \
+            -H "Authorization: Bearer $(echo -n '${{ secrets.CENTRAL_TOKEN_USERNAME }}:${{ secrets.CENTRAL_TOKEN_PASSWORD }}' | base64)" \
+            "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/name.velikodniy.vitaliy?publishing_type=automatic"
