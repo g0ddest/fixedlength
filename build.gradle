@@ -36,7 +36,7 @@ java {
 }
 
 group 'name.velikodniy.vitaliy'
-version '0.13'
+version '0.14'
 
 repositories {
     mavenLocal()
