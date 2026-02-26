@@ -35,20 +35,41 @@ import java.util.stream.StreamSupport;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Class for fixed line processing and registering classes to process.
- * @param <T>
+ * Fluent builder and processor for fixed-length (positional)
+ * flat files.
+ *
+ * <p>Typical usage:
+ * <pre>{@code
+ * List<MyRecord> records = new FixedLength<MyRecord>()
+ *         .registerLineType(MyRecord.class)
+ *         .parse(inputStream);
+ * }</pre>
+ *
+ * <p>Supports both parsing (text to objects) and formatting
+ * (objects to text). Multiple line types can be registered for
+ * mixed-format files. Custom formatters can be registered for
+ * user-defined types.
+ *
+ * <p><strong>Thread safety:</strong> instances of this class are
+ * <em>not</em> thread-safe. Create a separate instance for each
+ * thread, or synchronize access externally.
+ *
+ * @param <T> the common supertype of all registered line types
  */
 public class FixedLength<T> {
 
-    private static final Logger LOGGER = Logger.getLogger(FixedLength.class.getName());
+    private static final Logger LOGGER =
+            Logger.getLogger(FixedLength.class.getName());
 
-    private static final Map<
+    private final Map<
             Class<? extends Serializable>,
             Class<? extends Formatter<? extends Serializable>>
-            > FORMATTERS
-            = Formatter.getDefaultFormatters();
-    private final Map<Class<? extends Predicate<String>>, Predicate<String>> predicates = new HashMap<>();
-    private final List<FixedFormatLine<? extends T>> lineTypes = new ArrayList<>();
+            > formatters = Formatter.getDefaultFormatters();
+    private final Map<
+            Class<? extends Predicate<String>>,
+            Predicate<String>> predicates = new HashMap<>();
+    private final List<FixedFormatLine<? extends T>> lineTypes =
+            new ArrayList<>();
     private boolean skipUnknownLines = true;
     private boolean skipErroneousFields = false;
     private boolean skipErroneousLines = false;
@@ -56,30 +77,60 @@ public class FixedLength<T> {
     private String delimiterString = "\n";
     private Pattern delimiter = Pattern.compile(delimiterString);
 
-    private FixedFormatLine<T> classToLineDesc(final Class<? extends T> clazz) {
+    private FixedFormatLine<T> classToLineDesc(
+            final Class<? extends T> clazz) {
         FixedFormatLine<T> fixedFormatLine = new FixedFormatLine<>();
-        fixedFormatLine.clazz = clazz;
-        FixedLine annotation = clazz.getDeclaredAnnotation(FixedLine.class);
+        fixedFormatLine.setClazz(clazz);
+        FixedLine annotation =
+                clazz.getDeclaredAnnotation(FixedLine.class);
         if (annotation != null) {
             fixedFormatLine.setStartsWith(annotation.startsWith());
-            fixedFormatLine.predicate = annotation.predicate();
+            fixedFormatLine.setPredicate(annotation.predicate());
         }
         for (Field field : getAllFields(clazz)) {
-            FixedField fieldAnnotation = field.getDeclaredAnnotation(FixedField.class);
+            FixedField fieldAnnotation =
+                    field.getDeclaredAnnotation(FixedField.class);
             if (fieldAnnotation == null) {
                 continue;
             }
-            fixedFormatLine.fixedFormatFields.add(new FixedFormatField(field, fieldAnnotation));
+            fixedFormatLine.getFixedFormatFields()
+                    .add(new FixedFormatField(field, fieldAnnotation));
         }
 
+        validateFields(fixedFormatLine, clazz);
+
         for (Method method : clazz.getMethods()) {
-            SplitLineAfter splitLineAfter = method.getDeclaredAnnotation(SplitLineAfter.class);
+            SplitLineAfter splitLineAfter =
+                    method.getDeclaredAnnotation(SplitLineAfter.class);
             if (splitLineAfter == null) {
                 continue;
             }
-            fixedFormatLine.splitAfterMethod = method;
+            fixedFormatLine.setSplitAfterMethod(method);
         }
         return fixedFormatLine;
+    }
+
+    private void validateFields(
+            FixedFormatLine<T> line, Class<?> clazz) {
+        for (FixedFormatField fff : line.getFixedFormatFields()) {
+            FixedField fa = fff.getFixedFieldAnnotation();
+            if (fa.offset() < 1) {
+                throw new FixedLengthException(String.format(
+                        "Field '%s' in %s has invalid offset "
+                                + "%d (must be >= 1)",
+                        fff.getField().getName(),
+                        clazz.getName(),
+                        fa.offset()));
+            }
+            if (fa.length() <= 0) {
+                throw new FixedLengthException(String.format(
+                        "Field '%s' in %s has invalid length "
+                                + "%d (must be > 0)",
+                        fff.getField().getName(),
+                        clazz.getName(),
+                        fa.length()));
+            }
+        }
     }
 
     List<Field> getAllFields(final Class<?> clazz) {
@@ -87,49 +138,88 @@ public class FixedLength<T> {
             return Collections.emptyList();
         }
 
-        List<Field> result = new ArrayList<>(getAllFields(clazz.getSuperclass()));
-        List<Field> filteredFields = Arrays.stream(clazz.getDeclaredFields()).collect(Collectors.toList());
+        List<Field> result =
+                new ArrayList<>(getAllFields(clazz.getSuperclass()));
+        List<Field> filteredFields =
+                Arrays.stream(clazz.getDeclaredFields())
+                        .collect(Collectors.toList());
         result.addAll(filteredFields);
         return result;
     }
 
     /**
-     * Register here type that will be processed in serialization, or deserialization process.
-     * Could be called more than once.
-     * @param lineClass class for entity to be registered
-     * @return instance of FixedLength
+     * Registers a line type for parsing and formatting.
+     *
+     * <p>The class must have fields annotated with
+     * {@link FixedField}. Optionally, the class itself can be
+     * annotated with {@link FixedLine} to specify line-matching
+     * criteria for mixed-format files.
+     *
+     * <p>Can be called multiple times to register different line
+     * types.
+     *
+     * @param lineClass the annotated entity class to register
+     * @return this instance for method chaining
+     * @throws FixedLengthException if any {@link FixedField}
+     *         annotation has invalid offset or length values
      */
-    public FixedLength<T> registerLineType(final Class<? extends T> lineClass) {
+    public FixedLength<T> registerLineType(
+            final Class<? extends T> lineClass) {
         lineTypes.add(classToLineDesc(lineClass));
         return this;
     }
 
     /**
-     * Add formatter to work with class types.
+     * Registers a custom formatter for the given type.
      *
-     * @param typeClass      type that should be formatter
-     * @param formatterClass formatter to pass through
-     * @return instance of FixedLength
+     * <p>Custom formatters override built-in formatters for the
+     * same type. The registration applies only to this
+     * {@code FixedLength} instance.
+     *
+     * @param typeClass      the type to be formatted
+     * @param formatterClass the formatter class to use
+     * @return this instance for method chaining
      */
     public FixedLength<T> registerFormatter(
             final Class<? extends Serializable> typeClass,
-            final Class<? extends Formatter<? extends Serializable>> formatterClass) {
-        FORMATTERS.put(typeClass, formatterClass);
+            final Class<? extends Formatter<? extends Serializable>>
+                    formatterClass) {
+        formatters.put(typeClass, formatterClass);
         return this;
     }
 
     /**
-     * In case of unknown line, the one will be skipped with no exception thrown
-     * @return instance of FixedLength
+     * Configures this parser to throw a
+     * {@link FixedLengthException} when a line does not match
+     * any registered line type.
+     *
+     * <p>By default, unknown lines are silently skipped.
+     *
+     * @return this instance for method chaining
      */
-    public FixedLength<T> stopSkipUnknownLines() {
+    public FixedLength<T> failOnUnknownLines() {
         skipUnknownLines = false;
         return this;
     }
 
     /**
-     * In case of error field in parsing the line, the one will be skipped with no exception thrown
-     * @return instance of FixedLength
+     * Configures this parser to throw on unknown lines.
+     *
+     * @return this instance for method chaining
+     * @deprecated Use {@link #failOnUnknownLines()} instead
+     *             for a clearer method name.
+     */
+    @Deprecated
+    public FixedLength<T> stopSkipUnknownLines() {
+        return failOnUnknownLines();
+    }
+
+    /**
+     * Configures this parser to set fields to {@code null} when
+     * a parsing error occurs on an individual field, instead of
+     * throwing an exception.
+     *
+     * @return this instance for method chaining
      */
     public FixedLength<T> skipErroneousFields() {
         skipErroneousFields = true;
@@ -137,8 +227,10 @@ public class FixedLength<T> {
     }
 
     /**
-     * In case of error line while parsing, the one will be skipped with no exception thrown
-     * @return instance of FixedLength
+     * Configures this parser to skip entire lines that cause
+     * parsing errors, instead of throwing an exception.
+     *
+     * @return this instance for method chaining
      */
     public FixedLength<T> skipErroneousLines() {
         skipErroneousLines = true;
@@ -146,12 +238,16 @@ public class FixedLength<T> {
     }
 
     /**
-     * In case you have a mixed fixed length file with different types in it,
-     * you could register more than one line type in array instead of calling registerLineType multiple times.
-     * @param lineClasses class for entity to be registered
-     * @return instance of FixedLength
+     * Registers multiple line types at once from a list.
+     *
+     * <p>Equivalent to calling {@link #registerLineType} for
+     * each class in the list.
+     *
+     * @param lineClasses the entity classes to register
+     * @return this instance for method chaining
      */
-    public FixedLength<T> registerLineTypes(final List<Class<T>> lineClasses) {
+    public FixedLength<T> registerLineTypes(
+            final List<Class<T>> lineClasses) {
         lineTypes.addAll(
                 lineClasses.stream()
                         .map(this::classToLineDesc)
@@ -161,60 +257,94 @@ public class FixedLength<T> {
     }
 
     /**
-     * In case you have a mixed fixed length file with different types in it,
-     * you could register more than one line type in array instead of calling registerLineType multiple times.
-     * @param lineClasses class for entity to be registered
-     * @return instance of FixedLength
+     * Registers multiple line types at once from an array.
+     *
+     * <p>Equivalent to calling {@link #registerLineType} for
+     * each class in the array.
+     *
+     * @param lineClasses the entity classes to register
+     * @return this instance for method chaining
      */
-    public FixedLength<T> registerLineTypes(final Class<T>[] lineClasses) {
+    public FixedLength<T> registerLineTypes(
+            final Class<T>[] lineClasses) {
         registerLineTypes(Arrays.asList(lineClasses));
         return this;
     }
 
     /**
-     * Specifies charset of a file, in case of no provided Charset.defaultCharset() will be used
-     * @param charset Charset of current file
-     * @return instance of FixedLength
+     * Sets the character encoding used when reading from an
+     * {@link InputStream}.
+     *
+     * <p>If not specified, {@link Charset#defaultCharset()} is
+     * used.
+     *
+     * @param charset the charset to use (must not be {@code null})
+     * @return this instance for method chaining
+     * @throws NullPointerException if {@code charset} is
+     *         {@code null}
      */
     public FixedLength<T> usingCharset(Charset charset) {
-        this.charset = requireNonNull(charset, "Charset can't be null");
+        this.charset = requireNonNull(
+                charset, "Charset can't be null");
         return this;
     }
 
     /**
-     * Delimiter between fixed line entity records could be specified as a regexp pattern.
-     * By default, it is linefeed LF \n
-     * @param pattern regexp pattern how to break lines
-     * @return instance of FixedLength
+     * Sets the line delimiter as a regular expression pattern.
+     *
+     * <p>Defaults to {@code \n} (line feed).
+     *
+     * @param pattern the compiled regex pattern for splitting
+     *                lines (must not be {@code null})
+     * @return this instance for method chaining
+     * @throws NullPointerException if {@code pattern} is
+     *         {@code null}
      */
     public FixedLength<T> usingLineDelimiter(Pattern pattern) {
-        this.delimiter = requireNonNull(pattern, "Line delimiter pattern can't be null");
+        this.delimiter = requireNonNull(
+                pattern, "Line delimiter pattern can't be null");
         return this;
     }
 
     /**
-     * Delimiter between fixed line entity records. By default, it is linefeed LF \n (\u000a)
-     * @param delimiterString string that points the end of a line
-     * @return instance of FixedLength
+     * Sets the line delimiter as a literal string.
+     *
+     * <p>The string is treated as a literal (not a regex).
+     * Defaults to {@code "\n"} (line feed).
+     *
+     * @param delimiterString the literal delimiter string
+     *                        (must not be {@code null})
+     * @return this instance for method chaining
+     * @throws NullPointerException if {@code delimiterString}
+     *         is {@code null}
      */
-    public FixedLength<T> usingLineDelimiter(String delimiterString) {
+    public FixedLength<T> usingLineDelimiter(
+            String delimiterString) {
         this.delimiterString = requireNonNull(
                 delimiterString,
                 "Delimiter can't be null");
-        this.delimiter = Pattern.compile("delimiterString");
+        this.delimiter = Pattern.compile(
+                Pattern.quote(delimiterString));
         return this;
     }
 
-    private Predicate<String> getPredicate(Class<? extends Predicate<String>> clazz) {
+    private Predicate<String> getPredicate(
+            Class<? extends Predicate<String>> clazz) {
         if (predicates.containsKey(clazz)) {
             return predicates.get(clazz);
         } else {
             Predicate<String> predicate;
             try {
-                predicate = clazz.getDeclaredConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                predicate =
+                        clazz.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException
+                     | IllegalAccessException
+                     | InvocationTargetException
                      | NoSuchMethodException e) {
-                throw new FixedLengthException("Cannot init predicate, it should have empty constructor", e);
+                throw new FixedLengthException(
+                        "Cannot instantiate predicate; "
+                                + "it must have a public "
+                                + "no-argument constructor", e);
             }
             predicates.put(clazz, predicate);
             return predicate;
@@ -237,18 +367,22 @@ public class FixedLength<T> {
             }
         }
         if (!skipUnknownLines) {
-            throw new FixedLengthException("Find unknown line:\n " + line);
+            throw new FixedLengthException(
+                    "Unknown line found:\n " + line);
         }
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private T lineToObject(FixedFormatRecord fixedFormatRecord) {
-        Class<? extends T> clazz = fixedFormatRecord.fixedFormatLine.clazz;
-        String line = fixedFormatRecord.rawLine;
+        Class<? extends T> clazz =
+                fixedFormatRecord.getFixedFormatLine().getClazz();
+        String line = fixedFormatRecord.getRawLine();
         T lineAsObject = null;
         boolean useEmptyConstructor = true;
         try {
-            lineAsObject = clazz.getDeclaredConstructor().newInstance();
+            lineAsObject =
+                    clazz.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException e) {
             LOGGER.fine("No empty constructor in class");
             useEmptyConstructor = false;
@@ -256,57 +390,98 @@ public class FixedLength<T> {
                  | InstantiationException
                  | InvocationTargetException e) {
             throw new FixedLengthException(
-                    "Unable to instantiate " + clazz.getName(), e
-            );
+                    "Unable to instantiate "
+                            + clazz.getName(), e);
         }
 
-        Object[] args = new Object[fixedFormatRecord.fixedFormatLine.fixedFormatFields.size()];
-        int index = 0;
-        for (FixedFormatField fixedFormatField : fixedFormatRecord.fixedFormatLine.fixedFormatFields) {
-            FixedField fieldAnnotation = fixedFormatField.getFixedFieldAnnotation();
-            Field field = fixedFormatField.getField();
-            int startOfFieldIndex = fieldAnnotation.offset() - 1;
-            int endOfFieldIndex = startOfFieldIndex + fieldAnnotation.length();
-            if (endOfFieldIndex > line.length()) {
-                continue;
-            }
-            String str = fieldAnnotation.align().remove(line.substring(
-                    startOfFieldIndex,
-                    endOfFieldIndex
-            ), fieldAnnotation.padding());
-            if (acceptFieldContent(str, fieldAnnotation)) {
-                if (useEmptyConstructor) {
-                    fillField(field, lineAsObject, str, fieldAnnotation);
-                } else {
-                    args[index++] = Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation);
-                }
-            }
-        }
+        List<FixedFormatField> fields =
+                fixedFormatRecord.getFixedFormatLine()
+                        .getFixedFormatFields();
+        Object[] args = new Object[fields.size()];
+        parseFields(
+                fields, line, useEmptyConstructor,
+                lineAsObject, args);
         if (!useEmptyConstructor) {
-            try {
-                if (clazz.getDeclaredConstructors().length != 1) {
-                    throw new FixedLengthException("There should be only one matching constructor");
-                }
-                lineAsObject = (T) clazz.getDeclaredConstructors()[0].newInstance(args);
-            } catch (IllegalAccessException
-                     | InstantiationException
-                     | InvocationTargetException e) {
-                throw new FixedLengthException("Unable to instantiate " + clazz.getName(), e);
-            }
+            lineAsObject = newInstanceViaConstructor(
+                    clazz, args);
         }
         return lineAsObject;
     }
 
-    private void fillField(Field field, T lineAsObject, String str, FixedField fieldAnnotation) {
+    private void parseFields(
+            List<FixedFormatField> fields, String line,
+            boolean useEmptyConstructor, T lineAsObject,
+            Object[] args) {
+        int argIndex = 0;
+        for (FixedFormatField fixedFormatField : fields) {
+            FixedField fieldAnnotation =
+                    fixedFormatField.getFixedFieldAnnotation();
+            Field field = fixedFormatField.getField();
+            int startOfFieldIndex =
+                    fieldAnnotation.offset() - 1;
+            int endOfFieldIndex =
+                    startOfFieldIndex + fieldAnnotation.length();
+            if (endOfFieldIndex > line.length()) {
+                continue;
+            }
+            String str = fieldAnnotation.align().remove(
+                    line.substring(
+                            startOfFieldIndex,
+                            endOfFieldIndex),
+                    fieldAnnotation.padding());
+            if (acceptFieldContent(str, fixedFormatField)) {
+                if (useEmptyConstructor) {
+                    fillField(field, lineAsObject, str,
+                            fieldAnnotation);
+                } else {
+                    args[argIndex++] = Formatter
+                            .instance(formatters,
+                                    field.getType())
+                            .asObject(str, fieldAnnotation);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private T newInstanceViaConstructor(
+            Class<? extends T> clazz, Object[] args) {
+        try {
+            if (clazz.getDeclaredConstructors().length != 1) {
+                throw new FixedLengthException(
+                        "There should be only one "
+                                + "matching constructor");
+            }
+            // Constructor args are populated in field
+            // declaration order, which must match the
+            // constructor parameter order for record-style
+            // classes.
+            return (T) clazz.getDeclaredConstructors()[0]
+                    .newInstance(args);
+        } catch (IllegalAccessException
+                 | InstantiationException
+                 | InvocationTargetException e) {
+            throw new FixedLengthException(
+                    "Unable to instantiate "
+                            + clazz.getName(), e);
+        }
+    }
+
+    private void fillField(
+            Field field, T lineAsObject,
+            String str, FixedField fieldAnnotation) {
         field.setAccessible(true);
 
         try {
             field.set(
                     lineAsObject,
-                    Formatter.instance(FORMATTERS, field.getType()).asObject(str, fieldAnnotation)
+                    Formatter
+                            .instance(formatters, field.getType())
+                            .asObject(str, fieldAnnotation)
             );
         } catch (IllegalAccessException e) {
-            throw new FixedLengthException("Access to field failed", e);
+            throw new FixedLengthException(
+                    "Access to field failed", e);
         } catch (Exception e) {
             if (e instanceof FixedLengthException) {
                 throw e;
@@ -315,47 +490,61 @@ public class FixedLength<T> {
                 throw e;
             }
             LOGGER.warning(String.format(
-                    "Skipping field of type %s with error in value %s",
+                    "Skipping field of type %s with error "
+                            + "in value %s",
                     field.getType(),
                     str
             ));
         }
     }
 
-    private boolean acceptFieldContent(String content, FixedField fieldAnnotation) {
+    private boolean acceptFieldContent(
+            String content,
+            FixedFormatField fixedFormatField) {
+        FixedField fieldAnnotation =
+                fixedFormatField.getFixedFieldAnnotation();
         if (content == null) {
             return false;
         }
-        if (content.trim().isEmpty() && !fieldAnnotation.allowEmptyStrings()) {
+        if (content.trim().isEmpty()
+                && !fieldAnnotation.allowEmptyStrings()) {
             return false;
         }
         if (fieldAnnotation.ignore().isEmpty()) {
-            // No ignore content defined, accepting
             return true;
         }
-        // Ignore content defined: accepting if not matching ignore regular expression
-        Pattern pattern = Pattern.compile(fieldAnnotation.ignore());
+        Pattern pattern = fixedFormatField.getIgnorePattern();
         return !pattern.matcher(content).matches();
     }
 
-    private List<T> lineToObjects(FixedFormatRecord fixedFormatRecord) {
+    private List<T> lineToObjects(
+            FixedFormatRecord fixedFormatRecord) {
         try {
-            T lineAsObject = this.lineToObject(fixedFormatRecord);
-            Method splitMethod = fixedFormatRecord.fixedFormatLine.splitAfterMethod;
+            T lineAsObject =
+                    this.lineToObject(fixedFormatRecord);
+            Method splitMethod = fixedFormatRecord
+                    .getFixedFormatLine().getSplitAfterMethod();
             if (splitMethod == null) {
                 return Collections.singletonList(lineAsObject);
             }
             int splitIndex;
             try {
-                splitIndex = (Integer) splitMethod.invoke(lineAsObject);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new FixedLengthException("Access to method failed", e);
+                splitIndex =
+                        (Integer) splitMethod.invoke(lineAsObject);
+            } catch (IllegalAccessException
+                     | InvocationTargetException e) {
+                throw new FixedLengthException(
+                        "Access to method failed", e);
             }
-            if (splitIndex <= 0 || splitIndex >= fixedFormatRecord.rawLine.length()) {
+            if (splitIndex <= 0
+                    || splitIndex
+                    >= fixedFormatRecord.getRawLine().length()) {
                 return Collections.singletonList(lineAsObject);
             }
-            String subRawLine = fixedFormatRecord.rawLine.substring(splitIndex);
-            FixedFormatRecord subRecord = this.fixedFormatLine(subRawLine);
+            String subRawLine = fixedFormatRecord
+                    .getRawLine().substring(splitIndex);
+            FixedFormatRecord subRecord =
+                    this.fixedFormatLine(subRawLine);
             if (subRecord == null) {
                 return Collections.singletonList(lineAsObject);
             }
@@ -376,54 +565,88 @@ public class FixedLength<T> {
     }
 
     /**
-     * Parses a fixed length file into a List
-     * @param stream InputStream of a fixed length file
-     * @return List of parsed objects
-     * @throws FixedLengthException in case of parsing errors
+     * Parses a fixed-length file into a {@link List}.
+     *
+     * @param stream an {@link InputStream} of the fixed-length
+     *               file
+     * @return a list of parsed objects
+     * @throws FixedLengthException if no line types are
+     *         registered, or if a parsing error occurs
      */
-    public List<T> parse(InputStream stream) throws FixedLengthException {
-        return this.parseAsStream(stream).collect(Collectors.toList());
+    public List<T> parse(InputStream stream)
+            throws FixedLengthException {
+        try (Stream<T> s = this.parseAsStream(stream)) {
+            return s.collect(Collectors.toList());
+        }
     }
 
     /**
-     * Parses a fixed length file into a List
-     * @param reader Reader of a fixed length file
-     * @return List of parsed objects
-     * @throws FixedLengthException in case of parsing errors
+     * Parses a fixed-length file into a {@link List}.
+     *
+     * @param reader a {@link Reader} of the fixed-length file
+     * @return a list of parsed objects
+     * @throws FixedLengthException if no line types are
+     *         registered, or if a parsing error occurs
      */
-    public List<T> parse(Reader reader) throws FixedLengthException {
-        return parseAsStream(reader).collect(Collectors.toList());
+    public List<T> parse(Reader reader)
+            throws FixedLengthException {
+        try (Stream<T> s = parseAsStream(reader)) {
+            return s.collect(Collectors.toList());
+        }
     }
 
     /**
-     * Parses a fixed length file into a stream
-     * @param inputStream InputStream of a fixed length file
-     * @return Stream of parsed objects
-     * @throws FixedLengthException in case of parsing errors
+     * Parses a fixed-length file into a {@link Stream}.
+     *
+     * <p>The returned stream wraps a {@link Scanner}. Callers
+     * should close the stream (e.g. via try-with-resources) to
+     * release the underlying resources.
+     *
+     * @param inputStream an {@link InputStream} of the
+     *                    fixed-length file
+     * @return a stream of parsed objects
+     * @throws FixedLengthException if no line types are
+     *         registered
      */
     public Stream<T> parseAsStream(InputStream inputStream)
             throws FixedLengthException {
+        Scanner scanner = new Scanner(
+                inputStream, this.charset.name())
+                .useDelimiter(this.delimiter);
         Stream<String> lines = StreamSupport.stream(
-                        Spliterators.spliterator(
-                                new Scanner(inputStream, this.charset.name()).useDelimiter(this.delimiter),
-                                Long.MAX_VALUE,
-                                Spliterator.ORDERED | Spliterator.NONNULL
-                        ), false);
+                Spliterators.spliterator(
+                        scanner,
+                        Long.MAX_VALUE,
+                        Spliterator.ORDERED
+                                | Spliterator.NONNULL
+                ), false);
 
-        return parseAsStream(lines);
+        return parseAsStream(lines).onClose(scanner::close);
     }
 
     /**
-     * Parses a fixed length file into a stream
-     * @param reader Reader of a fixed length file
-     * @return Stream of parsed objects
-     * @throws FixedLengthException in case of parsing errors
+     * Parses a fixed-length file into a {@link Stream}.
+     *
+     * @param reader a {@link Reader} of the fixed-length file
+     * @return a stream of parsed objects
+     * @throws FixedLengthException if no line types are
+     *         registered
      */
-    public Stream<T> parseAsStream(Reader reader) throws FixedLengthException {
-        return parseAsStream(new BufferedReader(reader).lines());
+    public Stream<T> parseAsStream(Reader reader)
+            throws FixedLengthException {
+        BufferedReader buffered = new BufferedReader(reader);
+        return parseAsStream(buffered.lines())
+                .onClose(() -> {
+                    try {
+                        buffered.close();
+                    } catch (java.io.IOException ignored) {
+                        // best-effort close
+                    }
+                });
     }
 
-    private Stream<T> parseAsStream(Stream<String> lines) throws FixedLengthException {
+    private Stream<T> parseAsStream(Stream<String> lines)
+            throws FixedLengthException {
         if (lineTypes.isEmpty()) {
             throw new FixedLengthException(
                     "Specify at least one line type"
@@ -432,13 +655,23 @@ public class FixedLength<T> {
 
         return lines.map(this::fixedFormatLine)
                 .filter(Objects::nonNull)
-                .flatMap(fixedFormatRecord -> lineToObjects(fixedFormatRecord).stream());
+                .flatMap(fixedFormatRecord ->
+                        lineToObjects(fixedFormatRecord)
+                                .stream());
     }
 
     /**
-     * Builds a fixed length String
-     * @param lines lines to be serialized
-     * @return String of a fixed length format
+     * Serializes a list of objects into a fixed-length format
+     * string.
+     *
+     * <p>Fields with {@code null} values are filled with the
+     * padding character (preserving field positions), unless a
+     * {@link FixedField#fallbackStringForNullValue()} is
+     * specified, in which case that value is used instead.
+     *
+     * @param lines the objects to serialize
+     * @return the formatted fixed-length string
+     * @throws FixedLengthException if field formatting fails
      */
     public String format(List<T> lines) {
 
@@ -450,49 +683,14 @@ public class FixedLength<T> {
 
             getAllFields(line.getClass())
                     .stream()
-                    .filter(
-                            f ->
-                                    f.getAnnotation(FixedField.class) != null
-                    )
-                    .sorted(Comparator.comparingInt(f -> f.getAnnotation(FixedField.class).offset()))
-                    .forEach(f -> {
-                        FixedField fixedFieldAnnotation = f.getAnnotation(FixedField.class);
-
-                        Formatter<T> formatter = (Formatter<T>) Formatter.instance(FORMATTERS, f.getType());
-
-                        f.setAccessible(true);
-
-                        T value;
-                        try {
-                            value = (T) f.get(line);
-                        } catch (IllegalAccessException e) {
-                            throw new FixedLengthException(e.getMessage(), e);
-                        }
-
-                        if (value != null) {
-                            builder.append(
-                                    fixedFieldAnnotation.align().make(
-                                            formatter.asString(value, fixedFieldAnnotation),
-                                            fixedFieldAnnotation.length(),
-                                            fixedFieldAnnotation.padding())
-                            );
-                        } else if (!fixedFieldAnnotation.fallbackStringForNullValue().isEmpty()) {
-                            if (fixedFieldAnnotation.fallbackStringForNullValue().length()
-                                    > fixedFieldAnnotation.length()) {
-                                throw new FixedLengthException(String.format(
-                                        "Fallback string for null value is too long for field %s in class %s. "
-                                                + "Please check the annotation parameters.",
-                                        f.getName(), line.getClass().getName()
-                                ));
-                            }
-                            String paddedFallbackString = fixedFieldAnnotation.align().make(
-                                    fixedFieldAnnotation.fallbackStringForNullValue(),
-                                    fixedFieldAnnotation.length(),
-                                    fixedFieldAnnotation.padding()
-                            );
-                            builder.append(paddedFallbackString);
-                        }
-                    });
+                    .filter(f ->
+                            f.getAnnotation(FixedField.class)
+                                    != null)
+                    .sorted(Comparator.comparingInt(f ->
+                            f.getAnnotation(FixedField.class)
+                                    .offset()))
+                    .forEach(f -> appendFormattedField(
+                            builder, f, line));
 
             if (lines.size() != currentLine++) {
                 builder.append(this.delimiterString);
@@ -503,65 +701,212 @@ public class FixedLength<T> {
         return builder.toString();
     }
 
+    @SuppressWarnings("unchecked")
+    private void appendFormattedField(
+            StringBuilder builder, Field f, T line) {
+        FixedField ann =
+                f.getAnnotation(FixedField.class);
+        Formatter<T> formatter = (Formatter<T>)
+                Formatter.instance(formatters, f.getType());
+
+        T value = getFieldValue(f, line);
+
+        if (value != null) {
+            builder.append(ann.align().make(
+                    formatter.asString(value, ann),
+                    ann.length(),
+                    ann.padding()));
+        } else if (!ann.fallbackStringForNullValue()
+                .isEmpty()) {
+            appendFallbackValue(builder, f, line, ann);
+        } else {
+            builder.append(Align.repeat(
+                    ann.padding(), ann.length()));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private T getFieldValue(Field f, T line) {
+        try {
+            f.setAccessible(true);
+            return (T) f.get(line);
+        } catch (IllegalAccessException | SecurityException e) {
+            // Field not accessible directly (e.g. Java records
+            // or module restrictions); try public accessor method
+            try {
+                Method accessor =
+                        line.getClass().getMethod(f.getName());
+                return (T) accessor.invoke(line);
+            } catch (NoSuchMethodException
+                     | IllegalAccessException
+                     | InvocationTargetException ex) {
+                throw new FixedLengthException(
+                        "Cannot access field "
+                                + f.getName(), ex);
+            }
+        }
+    }
+
+    private void appendFallbackValue(
+            StringBuilder builder, Field f,
+            T line, FixedField ann) {
+        if (ann.fallbackStringForNullValue().length()
+                > ann.length()) {
+            throw new FixedLengthException(String.format(
+                    "Fallback string for null value is "
+                            + "too long for field %s in "
+                            + "class %s. Please check the "
+                            + "annotation parameters.",
+                    f.getName(),
+                    line.getClass().getName()));
+        }
+        String paddedFallbackString = ann.align().make(
+                ann.fallbackStringForNullValue(),
+                ann.length(),
+                ann.padding());
+        builder.append(paddedFallbackString);
+    }
+
+    /**
+     * Holds a raw line together with its matched format
+     * descriptor.
+     */
     private final class FixedFormatRecord {
         private final String rawLine;
         private final FixedFormatLine<? extends T> fixedFormatLine;
 
         private FixedFormatRecord(
                 final String rawLine,
-                final FixedFormatLine<? extends T> fixedFormatLine) {
+                final FixedFormatLine<? extends T>
+                        fixedFormatLine) {
             this.rawLine = rawLine;
             this.fixedFormatLine = fixedFormatLine;
         }
+
+        String getRawLine() {
+            return rawLine;
+        }
+
+        @SuppressWarnings("java:S1452")
+        FixedFormatLine<? extends T> getFixedFormatLine() {
+            return fixedFormatLine;
+        }
     }
 
+    /**
+     * Describes the format of a single line type, including
+     * the target class, matching criteria, fields, and optional
+     * split method.
+     *
+     * @param <T> the line entity type
+     */
     private static class FixedFormatLine<T> {
-        private String startsWith = null;
+        private String startsWith;
         private Class<? extends Predicate<String>> predicate;
         private Class<? extends T> clazz;
-        private final List<FixedFormatField> fixedFormatFields = new ArrayList<>();
+        private final List<FixedFormatField> fixedFormatFields =
+                new ArrayList<>();
         private Method splitAfterMethod;
 
-        public Optional<String> getStartsWith() {
-            return Optional.ofNullable(startsWith).flatMap(s -> s.isEmpty() ? Optional.empty() : Optional.of(s));
+        /**
+         * Returns the {@code startsWith} prefix if explicitly
+         * set to a non-empty value.
+         *
+         * @return optional prefix string
+         */
+        Optional<String> getStartsWith() {
+            return Optional.ofNullable(startsWith)
+                    .flatMap(s -> s.isEmpty()
+                            ? Optional.empty()
+                            : Optional.of(s));
         }
 
-        public Optional<Class<? extends Predicate<String>>> getPredicate() {
-            return Optional.ofNullable(predicate);
+        /**
+         * Returns the predicate class if a custom one was
+         * specified. Returns {@link Optional#empty()} when the
+         * default (always-true) predicate is in effect.
+         *
+         * @return optional predicate class
+         */
+        Optional<Class<? extends Predicate<String>>>
+                getPredicate() {
+            if (predicate == null
+                    || FixedLine.DefaultPredicate.class
+                    .equals(predicate)) {
+                return Optional.empty();
+            }
+            return Optional.of(predicate);
         }
 
-        public void setStartsWith(String startsWith) {
+        void setStartsWith(String startsWith) {
             this.startsWith = startsWith;
         }
 
-        public void setPredicate(Class<? extends Predicate<String>> predicate) {
+        void setPredicate(
+                Class<? extends Predicate<String>> predicate) {
             this.predicate = predicate;
         }
 
-        public Class<? extends T> getClazz() {
+        Class<? extends T> getClazz() {
             return clazz;
         }
 
-        public void setClazz(Class<T> clazz) {
+        void setClazz(Class<? extends T> clazz) {
             this.clazz = clazz;
+        }
+
+        List<FixedFormatField> getFixedFormatFields() {
+            return fixedFormatFields;
+        }
+
+        Method getSplitAfterMethod() {
+            return splitAfterMethod;
+        }
+
+        void setSplitAfterMethod(Method method) {
+            this.splitAfterMethod = method;
         }
     }
 
+    /**
+     * Wraps a {@link Field} together with its
+     * {@link FixedField} annotation and provides a cached
+     * compiled {@link Pattern} for the {@code ignore} attribute.
+     */
     private static final class FixedFormatField {
         private final Field field;
         private final FixedField fixedFieldAnnotation;
+        private Pattern ignorePattern;
 
-        private FixedFormatField(Field field, FixedField fixedField) {
+        private FixedFormatField(
+                Field field, FixedField fixedField) {
             this.field = field;
             this.fixedFieldAnnotation = fixedField;
         }
 
-        public Field getField() {
+        Field getField() {
             return field;
         }
 
-        public FixedField getFixedFieldAnnotation() {
+        FixedField getFixedFieldAnnotation() {
             return fixedFieldAnnotation;
+        }
+
+        /**
+         * Returns a cached compiled {@link Pattern} for the
+         * {@link FixedField#ignore()} regex, or {@code null}
+         * if no ignore regex is defined.
+         *
+         * @return the compiled pattern, or {@code null}
+         */
+        Pattern getIgnorePattern() {
+            if (ignorePattern == null
+                    && !fixedFieldAnnotation.ignore()
+                    .isEmpty()) {
+                ignorePattern = Pattern.compile(
+                        fixedFieldAnnotation.ignore());
+            }
+            return ignorePattern;
         }
     }
 

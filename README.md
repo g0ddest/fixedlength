@@ -1,24 +1,23 @@
- # Fixed Length handler for Java
+# Fixed Length handler for Java
  
 [![Maven Central](https://img.shields.io/maven-central/v/name.velikodniy.vitaliy/fixedlength)](https://search.maven.org/artifact/name.velikodniy.vitaliy/fixedlength)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=g0ddest_fixedlength&metric=coverage)](https://sonarcloud.io/summary/new_code?id=g0ddest_fixedlength)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=g0ddest_fixedlength&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=g0ddest_fixedlength)
 [![javadoc](https://javadoc.io/badge2/name.velikodniy.vitaliy/fixedlength/javadoc.svg)](https://javadoc.io/doc/name.velikodniy.vitaliy/fixedlength)
 
-This is fast simple zero-dependency library for Java 8+ that aims to parse fixed length (files with entities placed on fixed place in every line) files.
+This is a fast, simple, zero-dependency library for Java 8+ that parses and formats fixed-length files (files where each field occupies a fixed position in every line).
 
-Library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso/fixed-length-file-handler) and [fixedformat4j](https://github.com/jeyben/fixedformat4j).
+The library was inspired by [Fixed Length File Handler](https://github.com/GuiaBolso/fixed-length-file-handler) and [fixedformat4j](https://github.com/jeyben/fixedformat4j).
 
-One of its advantages is support mixed line types.
+One of its advantages is support for mixed line types.
 
-It works with `InputStream` so it is more memory efficient than store all file in memory. This is big 
-advantage when working with big files.  
+It works with `InputStream`, so it is more memory-efficient than storing the entire file in memory. This is a big advantage when working with large files.
 
 ## Download
 
-This library is published to Maven Central and to Github packages, so you'll need to configure that in your repositories:
+This library is published to Maven Central and to GitHub Packages.
 
-Just ensure that you have 
+Just ensure that you have
 
 ```groovy
 repositories {
@@ -26,7 +25,7 @@ repositories {
 }
 ```
 
-or optionally if you want you can get the package from the Github packages
+Optionally, you can get the package from GitHub Packages:
 
 Gradle:
 ```groovy
@@ -41,9 +40,9 @@ repositories {
     }
 }
 ```
-(you need to add property with your username and github token, or put them into system envs).
+(you need to add a property with your username and GitHub token, or set them as environment variables).
 
-And then configure dependency:
+And then configure the dependency:
 
 Maven:
 ```xml
@@ -69,7 +68,7 @@ Ivy:
 
 ## Usage
 ### Basic usage
-For example, you can transform this lines to 2 different kind of objects:
+For example, you can transform these lines into 2 different kinds of objects:
 
 ```
 EmplJoe1      Smith     Developer 07500010012009
@@ -77,9 +76,9 @@ CatSnowball  20200103
 EmplJoe3      Smith     Developer 
 ```
 
-It's usual when processing data in some legacy systems.
+This is common when processing data in legacy systems.
 
-You just need to write class with field structure and annotate each field that you want to connect with your file.
+You just need to write a class with the field structure and annotate each field that you want to map to your file.
 
 To parse this simple file
 
@@ -88,7 +87,7 @@ Joe1      Smith
 Joe3      Smith     
 ```
 
-you need just write down this class (annotated fields also could be pulled from annotated classes):
+you just need to write this class (annotated fields can also be inherited from parent classes):
 
 ```java
 public class Employee {
@@ -100,7 +99,7 @@ public class Employee {
 }
 ```
 
-and run parser:
+and run the parser:
 
 ```java
 List<Object> parse = new FixedLength()
@@ -109,9 +108,9 @@ List<Object> parse = new FixedLength()
 ```
 
 ### Mixed line types
-If there are few line types in your file and they starts with different string you can register different line types.
+If there are multiple line types in your file and they start with different strings, you can register different line types.
 
-To do this you should add annotation to your class:
+To do this, add an annotation to your class:
 
 ```java
 @FixedLine(startsWith = "Empl")
@@ -125,7 +124,7 @@ CatSnowball
 EmplJoe3      Smith     
 ```
 
-with these files:
+with these classes:
 
 ```java
 @FixedLine(startsWith = "Empl")
@@ -139,7 +138,7 @@ public class EmployeeMixed {
 }
 ```
 
-(fields could be final as well).
+(fields can be final as well).
 
 ```java
 @FixedLine(startsWith = "Cat")
@@ -154,7 +153,7 @@ public class CatMixed {
 }
 ```
 
-and run parser like that:
+and run the parser like this:
 
 ```java
 List<Object> parse = new FixedLength()
@@ -164,7 +163,7 @@ List<Object> parse = new FixedLength()
 ```
 
 ### Custom formatters
-If you need to use a custom class or type in parser you can add your own formatter like this:
+If you need to use a custom class or type in the parser, you can add your own formatter like this:
 
 ```java
 public class StringFormatter extends Formatter<String> {
@@ -175,24 +174,24 @@ public class StringFormatter extends Formatter<String> {
 }
 ```
 
-and register it with `registerFormatter` method on `FixedLength` instance.
+and register it with the `registerFormatter` method on a `FixedLength` instance.
 
 ### Annotation parameters
-There are all fields in `FixedField` annotation:
-* `offset` —  position on which this fields starts. Line starts with offset 1.
-* `length` — length of the field
-* `align` — on which side the content is justified. It works with padding.
-* `padding` — based on align trimming filler symbols. For example `" 1"` becomes `"1"`.
-* `format` — parameters that goes to formatter. For example, it can be date format.
-* `divide` — for number fields you can automatically divide the value on 10^n where n is value of this parameter.
+Here are all the attributes of the `FixedField` annotation:
+* `offset` — the position where this field starts. The line starts at offset 1.
+* `length` — the length of the field in characters.
+* `align` — which side the content is justified to. Used together with padding.
+* `padding` — the filler character, trimmed based on alignment. For example, `" 1"` becomes `"1"`.
+* `format` — a parameter passed to the formatter. For example, a date format pattern.
+* `divide` — for numeric fields, automatically divides the value by 10^n, where n is the value of this parameter.
 * `ignore` — the parser will ignore the field content if it matches the given regular expression. For example, `"0{8}"` will ignore `"00000000"`
 * `allowEmptyStrings` — the parser will keep empty strings instead of replacing them with `null`
 * `fallbackStringForNullValue` — when formatting an object back to a fixed length string, the formatter will replace a `null` value for this field with the given fallback string. If the fallback string is shorter than the field length, it will be padded according to the specified alignment and padding character.
 
 ### Generics support
 
-You can also use generics to cast parsed object to desired class.
-It is more convenient if you have file with one entity type.
+You can also use generics to cast parsed objects to the desired class.
+This is more convenient when you have a file with a single entity type.
 
 ```java
 List<Employee> parse = new FixedLength<Employee>()
@@ -201,28 +200,28 @@ List<Employee> parse = new FixedLength<Employee>()
 
 ### Ignoring errors
 
-If there is errors on your line format there are two modes that you could skip these errors if you want to:
+If there are errors in your data, two modes allow you to skip them:
 
-* `skipErroneousLines` — line with error will not be added to result.
+* `skipErroneousLines` — a line with an error will not be added to the result.
 * `skipErroneousFields` — fields with errors will be `null`.
 
-In both cases warnings will be raised in logs.
+In both cases, warnings will be logged.
 
-By default, exception will be raised for entire process.
+By default, an exception is thrown on the first error.
 
 ### Splitting lines
 
-In the case if you have 2 different records in one line and there is a split index you can add a method in your entity that should return index of the next record and mark it with annotation `SplitLineAfter`.
+If you have 2 different records in one line and there is a split index, you can add a method to your entity that returns the index of the next record and mark it with the `SplitLineAfter` annotation.
 
-For example record
+For example, the record
 
 ```
 HEADERMy Title  26        EmplJoe1      Smith     Developer 07500010012009
 ```
 
-Number 26 indicates index of the next record.
+The number 26 indicates the index of the next record.
 
-You can describe it with entity:
+You can describe it with this entity:
 
 ```java
 @FixedLine(startsWith = "HEADER")
@@ -241,7 +240,7 @@ public class HeaderSplit {
 
 ### Custom rules for mixed lines
 
-There is a `startsWith` parameter for easy-to-use identifying the class to deserialize, but sometimes it is not enough. So there is a `predicate` parameter in `FixedLine` annotation where you should pass your own custom rule as predicate. Just implement `Predicate<String>` and pass pointer to class in annotation.
+The `startsWith` parameter provides an easy way to identify the class to deserialize, but sometimes it is not enough. For more complex cases, use the `predicate` parameter in the `FixedLine` annotation. Just implement `Predicate<String>` and pass the class reference in the annotation.
 
 ```java
 @FixedLine(predicate = EmployeePositionPredicate.class)
@@ -251,7 +250,9 @@ This class will be initialized just once and cached.
 
 ### Handling empty fields during formatting
 
-When formatting an object back to a fixed length string, you can control how empty (null) fields are handled using the `fallbackStringForNullValue` parameter in the `FixedField` annotation. If a field's value is `null`, the formatter will replace it with the specified fallback string. If the fallback string is shorter than the defined field length, it will be padded according to the specified alignment and padding character.
+When formatting an object back to a fixed-length string, `null` fields are filled with the padding character by default, preserving positional alignment.
+
+If you need a specific value instead of padding, use the `fallbackStringForNullValue` parameter in the `FixedField` annotation. If the fallback string is shorter than the field length, it will be padded according to the specified alignment and padding character.
 
 Let's say we have a class defined as follows:
 ```java
@@ -265,7 +266,7 @@ public class Employee {
     @FixedField(offset = 20, length = 10, align = Align.LEFT)
     public String role;
 
-    @FixedField(offset = 20, length = 10, align = Align.LEFT, ignore = "0{8}")
+    @FixedField(offset = 30, length = 8, align = Align.LEFT, ignore = "0{8}")
     public LocalDate joinDate;
 }
 ```
@@ -276,38 +277,38 @@ Joe1      Smith     Developer 12122009
 Joe3                Tester    00000000
 ```
 
-However, when formatting the resulting object back to a fixed length string, the `null` values for these columns would not be included, leading to a string like this:
+By default, formatting the 2nd line back produces padding for null fields:
 ```
-Joe3      Tester
+Joe3                Tester
 ```
 
-As this is most likely not what we want, we can specify a fallback string for each of the columns as follows:
+To use a meaningful fallback value (e.g. `"00000000"` for dates), specify it explicitly:
 ```java
 public class Employee {
-    @FixedField(offset = 1, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    @FixedField(offset = 1, length = 10, align = Align.LEFT)
     public String firstName;
 
-    @FixedField(offset = 10, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    @FixedField(offset = 10, length = 10, align = Align.LEFT)
     public String lastName;
 
-    @FixedField(offset = 20, length = 10, align = Align.LEFT, fallbackStringForNullValue = " ")
+    @FixedField(offset = 20, length = 10, align = Align.LEFT)
     public String role;
 
-    @FixedField(offset = 20, length = 10, align = Align.LEFT, ignore = "0{8}", fallbackStringForNullValue = "00000000")
+    @FixedField(offset = 30, length = 8, align = Align.LEFT, ignore = "0{8}", fallbackStringForNullValue = "00000000")
     public LocalDate joinDate;
 }
 ```
 
-When formatting the object back into a fixed length string, the resulting string will not look as expected (note how the fallback-strings will be auto-padded, if needed):
+Now formatting produces:
 ```
 Joe3                Tester    00000000
 ```
 
 ## Java records support
 
-There is an experimental support of Java 14+ records with no breaking of Java 8 support.
+There is experimental support for Java 14+ records without breaking Java 8 compatibility.
 
-Just annotate record's constructor as follows:
+Just annotate the record's constructor as follows:
 
 ```java
 record Employee (
@@ -319,8 +320,8 @@ record Employee (
 ){}
 ```
 
-and it works the same way as annotated class.
+and it works the same way as an annotated class.
 
 ## Benchmark
 
-There is a benchmark, you can run it with `gradle jmh` command. Also, you can change running parameters of it in file `src/jmh/java/name/velikodniy/vitaliy/fixedlength/benchmark/BenchmarkRunner.java`. 
+There is a benchmark that you can run with the `gradle jmh` command. You can change its parameters in `src/jmh/java/name/velikodniy/vitaliy/fixedlength/benchmark/BenchmarkRunner.java`.

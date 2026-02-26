@@ -3,10 +3,23 @@ package name.velikodniy.vitaliy.fixedlength;
 import java.util.Arrays;
 
 /**
- * Alignment of value in a field.
+ * Alignment of a value within a fixed-length field.
+ *
+ * <p>Determines how values shorter than the field width are
+ * padded and how padding is stripped during parsing.
+ *
+ * <ul>
+ *   <li>{@link #RIGHT} — pads on the left (e.g. numeric fields)
+ *   <li>{@link #LEFT}  — pads on the right (e.g. text fields)
+ * </ul>
  */
 public enum Align {
     RIGHT {
+        /**
+         * Left-pads {@code data} with {@code paddingChar} to
+         * reach {@code length}. If {@code data} is longer than
+         * {@code length}, the leftmost characters are truncated.
+         */
         public String make(String data, int length, char paddingChar) {
             String result = Align.leftPad(data, length, paddingChar);
             if (data == null) {
@@ -19,21 +32,32 @@ public enum Align {
             return result;
         }
 
+        /**
+         * Strips leading {@code paddingChar} characters from
+         * {@code data}. If all characters are padding and the
+         * padding character is {@code '0'}, returns {@code "0"}.
+         */
         public String remove(String data, char paddingChar) {
-            String result = data;
-            if (data == null) {
-                result = "";
+            if (data == null || data.isEmpty()) {
+                return paddingChar == '0' ? "0" : "";
             }
-            while (result.startsWith("" + paddingChar)) {
-                result = result.substring(1);
+            int start = 0;
+            while (start < data.length()
+                    && data.charAt(start) == paddingChar) {
+                start++;
             }
-            if (paddingChar == '0' && result.isEmpty()) {
-                result = "0";
+            if (start == data.length()) {
+                return paddingChar == '0' ? "0" : "";
             }
-            return result;
+            return data.substring(start);
         }
     },
     LEFT {
+        /**
+         * Right-pads {@code data} with {@code paddingChar} to
+         * reach {@code length}. If {@code data} is longer than
+         * {@code length}, the rightmost characters are truncated.
+         */
         public String make(String data, int length, char paddingChar) {
             String result = Align.rightPad(data, length, paddingChar);
             if (data == null) {
@@ -46,20 +70,42 @@ public enum Align {
             return result;
         }
 
+        /**
+         * Strips trailing {@code paddingChar} characters from
+         * {@code data}.
+         */
         public String remove(String data, char paddingChar) {
-            String result = data;
-            if (data == null) {
-                result = "";
+            if (data == null || data.isEmpty()) {
+                return "";
             }
-            while (result.endsWith("" + paddingChar)) {
-                result = result.substring(0, result.length() - 1);
+            int end = data.length();
+            while (end > 0
+                    && data.charAt(end - 1) == paddingChar) {
+                end--;
             }
-            return result;
+            return data.substring(0, end);
         }
     };
 
+    /**
+     * Pads or truncates {@code data} to exactly {@code length}
+     * characters using {@code paddingChar}.
+     *
+     * @param data        the value to pad (may be {@code null})
+     * @param length      the target field width
+     * @param paddingChar the character used for padding
+     * @return a string of exactly {@code length} characters
+     */
     public abstract String make(String data, int length, char paddingChar);
 
+    /**
+     * Removes padding characters from the aligned side of
+     * {@code data}.
+     *
+     * @param data        the padded value (may be {@code null})
+     * @param paddingChar the padding character to strip
+     * @return the value with padding removed
+     */
     public abstract String remove(String data, char paddingChar);
 
     private static final int MAX_PAD = 8192;
@@ -135,6 +181,17 @@ public enum Align {
         }
     }
 
+    /**
+     * Right-pads {@code str} with {@code padChar} to reach
+     * {@code size} characters. Returns {@code str} unchanged
+     * if it is already at least {@code size} characters long.
+     *
+     * @param str     the string to pad (may be {@code null})
+     * @param size    the target length
+     * @param padChar the padding character
+     * @return the padded string, or {@code null} if input is
+     *         {@code null}
+     */
     public static String rightPad(final String str, final int size, final char padChar) {
         if (str == null) {
             return null;
@@ -149,6 +206,16 @@ public enum Align {
         return str.concat(repeat(padChar, pads));
     }
 
+    /**
+     * Right-pads {@code str} by repeating {@code padStr} to
+     * reach {@code size} characters.
+     *
+     * @param str    the string to pad (may be {@code null})
+     * @param size   the target length
+     * @param padStr the padding string
+     * @return the padded string, or {@code null} if input is
+     *         {@code null}
+     */
     public static String rightPad(final String str, final int size, String padStr) {
         if (str == null) {
             return null;
@@ -180,6 +247,15 @@ public enum Align {
         }
     }
 
+    /**
+     * Creates a string consisting of {@code ch} repeated
+     * {@code repeat} times.
+     *
+     * @param ch     the character to repeat
+     * @param repeat the number of repetitions (zero or negative
+     *               returns an empty string)
+     * @return the repeated string
+     */
     public static String repeat(final char ch, final int repeat) {
         if (repeat <= 0) {
             return "";
