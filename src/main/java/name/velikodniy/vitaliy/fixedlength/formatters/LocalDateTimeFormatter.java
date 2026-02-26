@@ -4,22 +4,45 @@ import name.velikodniy.vitaliy.fixedlength.annotation.FixedField;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-public class LocalDateTimeFormatter extends Formatter<LocalDateTime> {
+/**
+ * Formatter for {@link LocalDateTime} values.
+ *
+ * <p>The format pattern is taken from {@link FixedField#format()}.
+ * If not specified, defaults to {@code "MMddyyyy HHmmss"}.
+ *
+ * <p>{@link DateTimeFormatter} instances are thread-safe and
+ * immutable, so they are cached in a shared concurrent map.
+ */
+public class LocalDateTimeFormatter
+        extends Formatter<LocalDateTime> {
 
-    private static final String DEFAULT_FORMAT = "MMddyyyy HHmmss";
+    private static final String DEFAULT_FORMAT =
+            "MMddyyyy HHmmss";
+
+    private static final ConcurrentMap<String, DateTimeFormatter>
+            CACHE = new ConcurrentHashMap<>();
 
     private static DateTimeFormatter format(FixedField field) {
-        return DateTimeFormatter.ofPattern(!field.format().isEmpty() ? field.format() : DEFAULT_FORMAT);
+        String pattern = !field.format().isEmpty()
+                ? field.format() : DEFAULT_FORMAT;
+        return CACHE.computeIfAbsent(
+                pattern, DateTimeFormatter::ofPattern);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public LocalDateTime asObject(String string, FixedField field) {
+    public LocalDateTime asObject(
+            String string, FixedField field) {
         return LocalDateTime.parse(string, format(field));
     }
 
+    /** {@inheritDoc} */
     @Override
-    public String asString(LocalDateTime object, FixedField field) {
+    public String asString(
+            LocalDateTime object, FixedField field) {
         return object.format(format(field));
     }
 }

@@ -6,11 +6,18 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Simple formatter for BigDecimal. Works with float numbers.
- * For example number 1234 turns to 12.34 if you specify
- * divide parameter as 2.
+ * Formatter for {@link BigDecimal} values with support for
+ * implicit decimal points via {@link FixedField#divide()}.
+ *
+ * <p>When {@code divide} is set to {@code n}, the raw integer
+ * value is divided by 10<sup>n</sup> during parsing and
+ * multiplied by 10<sup>n</sup> during formatting. For example,
+ * the string {@code "1234"} with {@code divide = 2} produces
+ * {@code BigDecimal("12.34")}.
  */
 public class BigDecimalFormatter extends Formatter<BigDecimal> {
+
+    /** {@inheritDoc} */
     @Override
     public BigDecimal asObject(String string, FixedField field) {
         BigDecimal result = new BigDecimal("".equals(string) ? "0" : string);
@@ -23,6 +30,7 @@ public class BigDecimalFormatter extends Formatter<BigDecimal> {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String asString(BigDecimal object, FixedField field) {
         if (object == null) {
